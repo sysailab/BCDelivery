@@ -79,15 +79,17 @@ class Tello:
             # print(f" % State Updater : From Tello :: {str_}")
     
     def thread_start(self):
-        print(f" @ Main : Receiver Thread start.")
+        print(f" @ Tello Model : Receiver Thread start.")
         threading.Thread(target=self.receiver, daemon=True).start()
         # threading.Thread(target=self.receiver).start()
-        print(f" @ Main : Sender Thread start.")
+        print(f" @ Tello Model : Sender Thread start.")
         threading.Thread(target=self.sender, daemon=True).start()
         # threading.Thread(target=self.sender).start()
-        print(f" @ Main : Update State Thread start.")
+        print(f" @ Tello Model : Update State Thread start.")
         threading.Thread(target=self.update_state , daemon=True).start()
         # threading.Thread(target=self.update_state).start()
+        
+        
             
         
     
