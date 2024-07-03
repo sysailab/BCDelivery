@@ -22,7 +22,7 @@ class Tello:
         
         
         self.cmd_max_time_out = 15
-        self.cmd_max_retry = 3
+        self.cmd_max_retry = 2
         
         self.cmd_buffer_size = 1024
          
@@ -57,6 +57,7 @@ class Tello:
                 print(f' # Sender : Success To Control "{cmd}".')
                 
             else:
+                self.cmd_queue = queue.Queue() # Queue 객체 초기화
                 self.cmd_event.set() # The failure set
                 print(f' # Sender : Stop retry: "{cmd}", Maximum re-tries: {self.cmd_max_retry}.')        
         
