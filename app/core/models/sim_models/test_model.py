@@ -57,8 +57,15 @@ class TestModel(BehaviorModelExecutor):
         if self._cur_state == "GENERATE":
             state_req_data = self._recv_queue.get()
 
-            state_req_data.home += 1
-            state_req_data.store += 1
+            
+            """
+            이 부분에서 시뮬레이션 연산 코드 짜면 댐.
+            위 아래 queue, event 관련된 코드는 건드리면 망가짐순 ㅠ 살살 다뤄줘
+            """
+            
+            
+            # state_req_data.home += 1
+            # state_req_data.store += 1
             
             self._send_queue.put(state_req_data)
             self._event.set()
