@@ -1,9 +1,16 @@
 import uvicorn
 import sys
+from config import config
+
 
 if __name__ == '__main__':
-        uvicorn.run("app.main:app",
-                host="0.0.0.0",
-                port=17148,
-                reload=True,
-                )
+        try:
+                uvicorn.run("app.fastapi:app",
+                        host=config.HOST,
+                        port=config.PORT,
+                        reload=config.RELOAD,
+                        )
+                
+        except Exception as e:
+                print(e)
+        

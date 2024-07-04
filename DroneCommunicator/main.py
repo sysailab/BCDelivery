@@ -34,15 +34,16 @@ if __name__ == "__main__":
     #     print(a)
         
     
-    # tello.command("command")
+    tello.command("command")
     
-    # tello.command("takeoff")
+    tello.command("takeoff")
     
-    # time.sleep(3)
     
-    # tello.command("land")
+    time.sleep(3)
     
-    # time.sleep(1)
+    tello.command("land")
+    
+    time.sleep(1)
     
     # tello.command("command")
     
