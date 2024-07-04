@@ -3,13 +3,20 @@ import time
 import threading
 import datetime
 import queue
+import cv2
+import numpy as np
+import av
 
 class Tello:
-    def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port) -> None:
+    def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port, _server_queue, _video_queue) -> None:
 
         self.drone_id = drone_id
         self.drone_ip = drone_ip
+        
         self.cmd_port, self.state_port, self.video_port = cmd_port, state_port, video_port
+        
+        self._server_queue = _server_queue
+        self._video_queue = _video_queue
         
         # Set Cmd Socket -> UDP
         self.cmd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -18,6 +25,15 @@ class Tello:
         # Set State Socket -> UDP
         self.state_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.state_socket.bind(('', state_port))
+        
+        # stream_url = f'udp://@{self.drone_ip}:{self.video_port}'
+        self.stream_url = f'udp://@{self.drone_ip}:{self.video_port}'
+
+        # 비디오 스트림을 열기
+        # self.video_container = av.open(stream_url)             
+        
+        # self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # self.video_socket.bind(('', video_port))        
         
         self.cmd_queue, self.cmd_event = queue.Queue(), threading.Event()
         
@@ -55,12 +71,14 @@ class Tello:
                     
                     
             if cmd_ok:
+                self._server_queue.put(0)
                 print(f' # Sender : Success To Control "{cmd}".')
                 
             else:
                 self.cmd_queue = queue.Queue() # Queue 객체 초기화
                 self.cmd_event.set() # The failure set
-                print(f' # Sender : Stop retry: "{cmd}", Maximum re-tries: {self.cmd_max_retry}.')        
+                print(f' # Sender : Stop retry: "{cmd}", Maximum re-tries: {self.cmd_max_retry}.')
+                self._server_queue.put(1)
         
         
     def receiver(self):
@@ -71,25 +89,49 @@ class Tello:
                 self.cmd_event.set() # one command has been successfully executed. Begin new execution.
                 
             else:
-                print(f' $ Receiver : From Tello :: {bytes_.encode()}')    
+                print(f' $ Receiver : From Tello :: {bytes_.decode()}')
+                self._server_queue.put(bytes_.decode())
   
     def update_state(self):     
         while True:
             bytes_, address = self.state_socket.recvfrom(1024)
             str_ = bytes_.decode()
             
-            print(f" % \033[33m{self.drone_id}\033[0m State Updater : From Tello :: {str_}")
-    
+            # print(f" % \033[33m{self.drone_id}\033[0m State Updater : From Tello :: {str_}")
+                        
+    def video_stream(self):
+        video_container = av.open(self.stream_url)       
+        for frame in video_container.decode(video=0):
+            # PyAV 프레임을 numpy 배열로 변환
+            img = frame.to_ndarray(format='bgr24')
+            
+            ret, buffer = cv2.imencode('.jpg', img)
+            
+            if ret:
+                video_frame = buffer.tobytes()
+                
+                if self._video_queue.full():
+                    self._video_queue.get()
+                    self._video_queue.put(video_frame)
+                
+                else:
+                    self._video_queue.put(video_frame)
+            # else:
+            #     self._video_frame = None
+            
     def thread_start(self):
-        print(f" @ Tello Model : Receiver Thread start.")
+        print(f" @ {self.drone_id} : Receiver Thread start.")
         threading.Thread(target=self.receiver, daemon=True).start()
-        # threading.Thread(target=self.receiver).start()
-        print(f" @ Tello Model : Sender Thread start.")
+        
+        print(f" @ {self.drone_id} : Sender Thread start.")
         threading.Thread(target=self.sender, daemon=True).start()
-        # threading.Thread(target=self.sender).start()
-        print(f" @ Tello Model : Update State Thread start.")
+        
+        print(f" @ {self.drone_id} : Update State Thread start.")
         threading.Thread(target=self.update_state , daemon=True).start()
-        # threading.Thread(target=self.update_state).start()
+        
+        print(f" @ {self.drone_id} : Video Stream Thread start.")
+        threading.Thread(target=self.video_stream , daemon=True).start()
+        
         
         
             
