@@ -5,8 +5,9 @@ import datetime
 import queue
 
 class Tello:
-    def __init__(self, drone_ip, cmd_port, state_port, video_port) -> None:
+    def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port) -> None:
 
+        self.drone_id = drone_id
         self.drone_ip = drone_ip
         self.cmd_port, self.state_port, self.video_port = cmd_port, state_port, video_port
         
@@ -71,13 +72,13 @@ class Tello:
                 
             else:
                 print(f' $ Receiver : From Tello :: {bytes_.encode()}')    
-
+  
     def update_state(self):     
         while True:
             bytes_, address = self.state_socket.recvfrom(1024)
             str_ = bytes_.decode()
             
-            print(f" % State Updater : From Tello :: {str_}")
+            print(f" % \033[33m{self.drone_id}\033[0m State Updater : From Tello :: {str_}")
     
     def thread_start(self):
         print(f" @ Tello Model : Receiver Thread start.")

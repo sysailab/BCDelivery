@@ -18,14 +18,19 @@ from starlette.responses import RedirectResponse
 
 # from app.core.routers import page_view, register, login, create, space, asset
 from app.core.routers import drone
+from app.core.routers import sim
 
 BASE_DIR = dirname(abspath(__file__))
-templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'core/templates')))
+# templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'core/templates')))
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=str(Path(BASE_DIR, 'static'))), name="static")
 
 app.include_router(drone.router, prefix="/drone", tags=["drone"])
+app.include_router(sim.router, prefix="/sim", tags=["sim"])
+
+
+
 
 # app.include_router(register.router, prefix="", tags=["register"])
 # app.include_router(page_view.router, prefix="", tags=["home"])

@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Request, responses, status
 from ..models.tello import Tello
 import json
+from ..models.base_model import DroneControl
 # from fastapi.templating import Jinja2Templates
 # from fastapi.staticfiles import StaticFiles
 # from ..models.database import db_manager
@@ -18,21 +19,24 @@ drones = {
     # "tt-17": Tello("192.168.50.13", 8889, 8890, 11111),
 }
 
-# db_manager.init_manager(MONGODB_URL, "simulverse")
-# BASE_DIR = dirname(dirname(abspath(__file__)))
-
-# templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'templates')))
-
 ip_table_dict = open("app/core/routers/drone_ip_table.json", 'r')
 ip_table_dict = json.load(ip_table_dict)
 
-
 @router.get("/control/{drone_id}/{cmd}")
 def control(request: Request, drone_id: str, cmd: str):
+    """드론 원격 제어를 위한 코드
+
+    Args:
+        drone_id (str): 드론 ID
+        cmd (str): 제어문
+
+    Returns:
+        _type_: _description_
+    """
     
     if drone_id in drones:
         drones[drone_id].command(cmd)
-        return {"msg" : "ok", "cmd": cmd, "state": "default model"}
+        return {"status": "ok", "msg" : f"{cmd} Commanded."}
         
     else:
         
@@ -40,19 +44,62 @@ def control(request: Request, drone_id: str, cmd: str):
             drone_ip = ip_table_dict[drone_id]["ip_address"]
             
         except Exception as e:
-            return ("No Drone IP Found")
+            return {"status": "err", "msg" : f"No Drone IP Found."}
+            
             
         
-        drones[drone_id] = Tello(drone_ip, 8889, 8890, 11111)
+        drones[drone_id] = Tello(drone_id, drone_ip, 8889, 8890, 11111)
         drones[drone_id].command(cmd)
+        
+        return {"status" : "ok", "msg": f"{drone_id} : New Model Created. {cmd} Commanded."}
     
-        return {"msg" : "ok", "cmd": cmd, "state": "create new model"}
     
-@router.delete("/drone")
+@router.post("/control/")
+def control(request: Request, drone_control: DroneControl):
+    """드론 원격 제어를 위한 코드
+
+    Args:
+        drone_id (str): 드론 ID
+        cmd (str): 제어문
+
+    Returns:
+        _type_: _description_
+    """
+        
+    if drone_control.drone_id in drones:
+        drones[drone_control.drone_id].command(drone_control.cmd)
+        return {"status": "ok", "msg" : f"{drone_control.cmd} Commanded."}
+        
+    else:
+        
+        try:
+            drone_ip = ip_table_dict[drone_control.drone_id]["ip_address"]
+            
+        except Exception as e:
+            return {"status": "err", "msg" : f"No Drone IP Found."}
+            
+        drones[drone_control.drone_id] = Tello(drone_ip, 8889, 8890, 11111)
+        drones[drone_control.drone_id].command(drone_control.cmd)
+        
+        return {"status" : "ok", "msg": f"{drone_control.drone_id} : New Model Created. {drone_control.cmd} Commanded."}    
     
-@router.post("/create")
-def create(request: Request):
-    pass
+    
+    
+@router.delete("/drone/{drone_id}")
+def delete_drone(request: Request, drone_id: str):
+    
+    if drone_id in drones:
+        
+        del drones[drone_id]
+        return {"status" : "ok", "msg": f"{drone_id} Deleted."} 
+    
+    else:
+        return {"status" : "err", "msg": f"No {drone_id} Found."} 
+    
+    
+# @router.post("/create")
+# def create(request: Request):
+#     pass
 
 
 # @router.get("/register/")
