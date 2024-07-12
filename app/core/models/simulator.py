@@ -1,6 +1,7 @@
 from pyevsim import BehaviorModelExecutor, SystemSimulator, Infinite
-from .sim_models.test_model import TestModel
 import threading
+from .sim_models.thread_commnuicator import ThreadCommnuicator
+from .sim_models.scenario_generator import ScenarioGenerator
 
 class Simulator():
     def __init__(self, _recv_queue= None, _send_queue= None, sm_event= None) -> None:        
@@ -31,53 +32,34 @@ class Simulator():
         시뮬레이션 엔진 입출력 포트 설정
         """
         
-        # self.engine.insert_input_port("start")
-        # self.engine.insert_input_port("init")
-        # self.engine.insert_input_port("pose_recv")
-        # self.engine.insert_input_port("send_result")
-        
-        # self.engine.insert_output_port("pose_check")   
-        # self.engine.insert_output_port("pose_classify")   
-        # self.engine.insert_output_port("pose_recv")   
-        # self.engine.insert_output_port("send_result")    
-        # self.engine.insert_output_port("end")   
-        
-        pass
+        self.sm_engine.insert_input_port("generate")
+        self.sm_engine.insert_input_port("fin")
+    
+        self.sm_engine.insert_output_port("generate")   
+        self.sm_engine.insert_output_port("fin")   
         
     def engine_register_entity(self) -> None:
         """
         시뮬레이션 엔진에 등록할 모델 설정
-        """
-    #     self.socket_model = SocketModel(instance_time = 0, destruct_time = Infinite,\
-    #         name = "socket_model", engine_name = "armleg")
-        
-    #     self.pose_check_model = PoseCheckModel(instance_time = 0, destruct_time = Infinite,\
-    #         name = "pose_check_model", engine_name = "armleg")
-        
-    #     self.pose_classify_model = PoseClassifyModel(instance_time = 0, destruct_time = Infinite,\
-    #         name = "pose_classify_model", engine_name = "armleg")
-        
-        self.test_model = TestModel(instance_time = 0, destruct_time = Infinite,\
-            name = "test_model", engine_name = self.engine_name, \
+        """        
+        self.thread_cm_model = ThreadCommnuicator(instance_time = 0, destruct_time = Infinite,\
+            name = "thread_cm_model", engine_name = self.engine_name, \
                 _recv_queue=self._recv_queue, _send_queue = self._send_queue, event= self.sm_event)
+        self.scenario_generate_model = ScenarioGenerator(instance_time = 0, destruct_time = Infinite,\
+            name = "scenario_generate_model", engine_name = self.engine_name)
         
-        
-    #     self.engine.register_entity(self.socket_model)
-    #     self.engine.register_entity(self.pose_check_model)
-    #     self.engine.register_entity(self.pose_classify_model)
-        self.sm_engine.register_entity(self.test_model)
+        self.sm_engine.register_entity(self.thread_cm_model)
+        self.sm_engine.register_entity(self.scenario_generate_model)
     
 
     def engine_coupling_relation(self) -> None:
         """
         시뮬레이션 엔진 내의 모델 간의 상호작용 설정
         """        
-        # self.engine.coupling_relation(self.socket_model, "pose_check", self.pose_check_model, "start")
-        # self.engine.coupling_relation(self.pose_check_model, "pose_classify", self.pose_classify_model, "start")
-        # self.engine.coupling_relation(self.pose_classify_model, "pose_recv", self.socket_model, "pose_recv")
-        # self.engine.coupling_relation(self.pose_classify_model, "send_result", self.socket_model, "send_result")
-        # self.engine.coupling_relation(self.pose_classify_model, "end", self.socket_model, "init")        
-        pass
+        self.sm_engine.coupling_relation(self.thread_cm_model, "generate",\
+            self.scenario_generate_model, "generate")
+        self.sm_engine.coupling_relation(self.scenario_generate_model, "fin",\
+            self.thread_cm_model, "fin")
     
     def engine_start(self) -> None:
         # self.engine.insert_external_event("start","start")

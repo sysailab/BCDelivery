@@ -1,6 +1,7 @@
 from os.path import dirname, abspath
 from pathlib import Path
 from fastapi import APIRouter, Depends, Request, responses, status
+from typing import List
 from ..models.simulator import Simulator
 import json
 import queue
@@ -16,13 +17,14 @@ sim_event = threading.Event()
 
 
 sim = Simulator(sim_send_queue, sim_recv_queue, sim_event)
-
+sim_flag = False
 sim.engine_thread_start()
 
 @router.post("/state/")
-def control(request: Request, state_request: StateRequest):
-    sim_send_queue.put(state_request)
-    # sim_event.set()
+def control(request: Request, state_request: List[StateRequest]):
+    
+    req_tolist = [dict(req) for req in state_request]
+    sim_send_queue.put(req_tolist)
     
     sim_event.wait()
     sim_event.clear()
@@ -33,4 +35,5 @@ def control(request: Request, state_request: StateRequest):
     # print(state_response)
     
     return state_response
+    
     
