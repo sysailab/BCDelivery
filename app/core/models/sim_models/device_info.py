@@ -13,7 +13,7 @@ CAR = {
 }
 
 TRANSITIONS = {
-        "STAY": {"STAY": 70, "DELIVERY": 30},
+        "STAY": {"STAY": 80, "DELIVERY": 20},
         "DELIVERY": {"DELIVERY": 96, "ACCIDENT": 2, "CANCEL": 2},
         "ACCIDENT": {"ACCIDENT": 100},
         "CANCEL": {"STAY": 100}

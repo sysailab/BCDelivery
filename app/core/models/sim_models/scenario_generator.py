@@ -30,6 +30,7 @@ class ScenarioGenerator(BehaviorModelExecutor):
 
             msg = SysMessage(self.get_name(), "fin")
             msg.insert(random_data)
+            # print(" + ", random_data)
             return msg
 
     def int_trans(self):

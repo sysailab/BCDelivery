@@ -27,7 +27,7 @@ class StateRequest(BaseModel):
     """
     
     
-    drone_id: str
+    id: str
     home: int
     store: int
     state: str
