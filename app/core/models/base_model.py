@@ -20,7 +20,7 @@ class StateRequest(BaseModel):
     """ Request State From Unity
 
     Required Value: 
-        drone_id: str
+        id: str
         home: int
         store: int
         state: str 

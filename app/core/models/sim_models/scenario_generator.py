@@ -45,6 +45,18 @@ class ScenarioGenerator(BehaviorModelExecutor):
         possible_states = list(TRANSITIONS[current_state].keys())
         weights = list(TRANSITIONS[current_state].values())
         selected_state = random.choices(possible_states, weights)[0]
+        
+        # rand_num = random.randint(1, 101)
+        
+        # if rand_num < 96:
+        #     selected_state = "DELIVERY"
+            
+        # elif rand_num >= 96 and rand_num <= 98:
+        #     selected_state = "ACCIDENT"
+            
+        # else:
+        #     selected_state = "CANCEL"
+        
 
         if current_state == "ACCIDENT":
             return  # ACCIDENT 상태에서 다른 상태로 전환 불가

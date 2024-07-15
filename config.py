@@ -4,6 +4,8 @@ class Config:
     HOST = "Your Host"
     PORT = "Your Port"
     RELOAD = "Your Reload"
+    WORKERS = "Your Workers",
+    LIMIT_CONCURRENCY = "Your Limit Concurrency"
 
 config = Config()
     
