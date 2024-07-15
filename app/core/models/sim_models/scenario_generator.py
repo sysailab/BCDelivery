@@ -26,7 +26,7 @@ class ScenarioGenerator(BehaviorModelExecutor):
                 if rd['state'] == "None":
                     rd['state'] = "STAY"
                 else:
-                    self.transition_state(rd, random_data)
+                    self.transition_state(rd)
 
             msg = SysMessage(self.get_name(), "fin")
             msg.insert(random_data)
@@ -37,7 +37,7 @@ class ScenarioGenerator(BehaviorModelExecutor):
         if self._cur_state == "PROCESSING":
             self._cur_state = "IDLE"
 
-    def transition_state(self, device, random_data):
+    def transition_state(self, device):
         current_state = device['state']
         if current_state not in TRANSITIONS:
             return
@@ -59,26 +59,32 @@ class ScenarioGenerator(BehaviorModelExecutor):
         
 
         if current_state == "ACCIDENT":
+            device['state'] = "ACCIDENT"
             return  # ACCIDENT 상태에서 다른 상태로 전환 불가
 
-        if current_state == "DELIVERY" and selected_state == "DELIVERY":
-            pass
-        else:
-            device['state'] = selected_state
-
-            if selected_state == "DELIVERY":
-                numbers = random.sample(range(1, 67), 2)
-                device['home'] = numbers[0]
-                device['store'] = numbers[1]
-            elif selected_state == "ACCIDENT":
-                self.handle_accident_state(device, random_data)
+        if current_state == "DELIVERY":
+            if selected_state == "ACCIDENT":
+                self.handle_accident_state(device)
             elif selected_state == "CANCEL":
-                device['state'] = 'STAY'
+                device['state'] = 'CANCEL'
                 device['home'] = 0
                 device['store'] = 0
+                
+            else:
+                device['state'] = "DELIVERY"  # 유지
+                return  # 상태 유지, 변경하지 않음
+            
+        elif current_state == "STAY":
+            if selected_state == "DELIVERY":
+                if device['home'] == 0 and device['store'] == 0:
+                    numbers = random.sample(range(1, 67), 2)
+                    device['home'] = numbers[0]
+                    device['store'] = numbers[1]
 
-    def handle_accident_state(self, accident_device, random_data):
-        stay_devices = [d for d in random_data if d['state'] == 'STAY']
+                    device['state'] = "DELIVERY"
+
+    def handle_accident_state(self, accident_device):
+        stay_devices = [d for d in self.data_msg if d['state'] == 'STAY']
         if stay_devices:
             stay_device = random.choice(stay_devices)
             stay_device['home'] = accident_device['home']

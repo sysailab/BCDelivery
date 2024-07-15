@@ -8,9 +8,9 @@ if __name__ == '__main__':
                 uvicorn.run("app.fastapi:app",
                         host = config.HOST,
                         port = config.PORT,
-                        reload = config.RELOAD,
-                        workers = config.WORKERS,
-                        limit_concurrency = config.LIMIT_CONCURRENCY
+                        reload = config.RELOAD
+                        # workers = config.WORKERS,
+                        # limit_concurrency = config.LIMIT_CONCURRENCY
                         )
                 
         except Exception as e:

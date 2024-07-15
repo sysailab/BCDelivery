@@ -10,6 +10,7 @@ from datetime import timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # from .core.models.database import db_manager
 # from .core.models.auth_manager import auth_manager
@@ -24,6 +25,20 @@ BASE_DIR = dirname(abspath(__file__))
 # templates = Jinja2Templates(directory=str(Path(BASE_DIR, 'core/templates')))
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"],  # 모든 HTTP 헤더 허용
+)
+
+
 app.mount("/static", StaticFiles(directory=str(Path(BASE_DIR, 'static'))), name="static")
 
 app.include_router(drone.router, prefix="/drone", tags=["drone"])
