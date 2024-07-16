@@ -8,15 +8,19 @@ import numpy as np
 import av
 
 class Tello:
-    def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port, _server_queue, _video_queue) -> None:
+    def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port) -> None:
 
         self.drone_id = drone_id
         self.drone_ip = drone_ip
         
         self.cmd_port, self.state_port, self.video_port = cmd_port, state_port, video_port
         
-        self._server_queue = _server_queue
-        self._video_queue = _video_queue
+        # self._server_queue = _server_queue
+        # self._video_queue = _video_queue
+        
+        self.drone_rep_queue = queue.Queue()
+
+        self.drone_video_queue = queue.Queue(maxsize=1)
         
         # Set Cmd Socket -> UDP
         self.cmd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -71,14 +75,14 @@ class Tello:
                     
                     
             if cmd_ok:
-                self._server_queue.put(0)
+                self.drone_rep_queue.put(0)
                 print(f' # Sender : Success To Control "{cmd}".')
                 
             else:
                 self.cmd_queue = queue.Queue() # Queue 객체 초기화
                 self.cmd_event.set() # The failure set
                 print(f' # Sender : Stop retry: "{cmd}", Maximum re-tries: {self.cmd_max_retry}.')
-                self._server_queue.put(1)
+                self.drone_rep_queue.put(1)
         
         
     def receiver(self):
@@ -90,7 +94,7 @@ class Tello:
                 
             else:
                 print(f' $ Receiver : From Tello :: {bytes_.decode()}')
-                self._server_queue.put(bytes_.decode())
+                self.drone_rep_queue.put(bytes_.decode())
   
     def update_state(self):     
         while True:
@@ -110,12 +114,12 @@ class Tello:
             if ret:
                 video_frame = buffer.tobytes()
                 
-                if self._video_queue.full():
-                    self._video_queue.get()
-                    self._video_queue.put(video_frame)
+                if self.drone_video_queue.full():
+                    self.drone_video_queue.get()
+                    self.drone_video_queue.put(video_frame)
                 
                 else:
-                    self._video_queue.put(video_frame)
+                    self.drone_video_queue.put(video_frame)
             # else:
             #     self._video_frame = None
             
