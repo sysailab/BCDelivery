@@ -6,6 +6,7 @@ import queue
 import cv2
 import numpy as np
 import av
+# from .base_model import BaseRobot
 
 class Tello:
     def __init__(self, drone_id, drone_ip, cmd_port, state_port, video_port) -> None:

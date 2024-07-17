@@ -24,6 +24,7 @@ sim.engine_thread_start()
 def control(request: Request, state_request: List[StateRequest]):
     
     req_tolist = [dict(req) for req in state_request]
+    # print(req_tolist)
     sim_send_queue.put(req_tolist)
     
     sim_event.wait()

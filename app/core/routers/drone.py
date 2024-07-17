@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Request, responses, status, Response
 from ..models.tello import Tello
 import json
-from ..models.base_model import DroneControl
+from ..models.base_model import Control
 from ..models.dict_scheduler import DictScheduler
 import queue
 import io
@@ -25,7 +25,7 @@ ip_table_dict = open("app/core/routers/drone_ip_table.json", 'r')
 ip_table_dict = json.load(ip_table_dict)    
     
 @router.post("/control/")
-def control(request: Request, drone_control: DroneControl):
+def control(request: Request, drone_control: Control):
     """드론 원격 제어를 위한 코드
 
     Args:
@@ -36,25 +36,25 @@ def control(request: Request, drone_control: DroneControl):
         _type_: _description_
     """
         
-    if drone_control.drone_id in drones:
+    if drone_control.id in drones:
 
-        drones[drone_control.drone_id].command(drone_control.cmd)
+        drones[drone_control.id].command(drone_control.cmd)
         
-        drone_rep = drones[drone_control.drone_id].drone_rep_queue.get()
+        drone_rep = drones[drone_control.id].drone_rep_queue.get()
         
         if drone_rep == 0:
             return {"status": "ok", "msg" : f"{drone_control.cmd} Commanded."}
         
         elif drone_rep == 1:
-            return {"status": "err", "msg" : f"{drone_control.drone_id} Drone did not responsed."}
+            return {"status": "err", "msg" : f"{drone_control.id} Drone did not responsed."}
             
         else:
             return {"status ": "except", "msg" : f"{drone_rep}"}
         
     else:
 
-        if not drone_initialize(drone_control.drone_id):
-            return {"status": "err", "msg" : f"No Drone IP Found."}
+        if not drone_initialize(drone_control.id):
+            return {"status": "err", "msg" : f"No Drone ID Found."}
         
         # try:
         #     drone_ip = ip_table_dict[drone_control.drone_id]["ip_address"]
@@ -71,12 +71,12 @@ def control(request: Request, drone_control: DroneControl):
         # drones[drone_control.drone_id] = Tello(drone_control.drone_id, drone_ip, \
         #     drone_cmd_port, drone_state_port, drone_video_port)
         
-        drones[drone_control.drone_id].command(drone_control.cmd)
+        drones[drone_control.id].command(drone_control.cmd)
         
-        drone_rep = drones[drone_control.drone_id].drone_rep_queue.get()
+        drone_rep = drones[drone_control.id].drone_rep_queue.get()
         
         if drone_rep == 0:
-            return {"status" : "ok", "msg": f"{drone_control.drone_id} : New Model Created. {drone_control.cmd} Commanded."}   
+            return {"status" : "ok", "msg": f"{drone_control.id} : New Model Created. {drone_control.cmd} Commanded."}   
         
         elif drone_rep == 1:
             return {"status": "err", "msg" : f"Drone did not responsed."}     
@@ -109,7 +109,7 @@ def stream_video(request: Request, drone_id: str):
         
     else:     
         if not drone_initialize(drone_id):
-            return {"status": "err", "msg" : f"No Drone IP Found."}        
+            return {"status": "err", "msg" : f"No Drone ID Found."}        
     
         try:        
             drones[drone_id].command(DRONE_COMMAND)
