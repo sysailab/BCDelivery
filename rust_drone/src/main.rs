@@ -13,17 +13,17 @@ async fn main() {
     )
     .await;
 
-    // loop{
+    loop{
 
-        // tello.send_command("command".to_string()).await;
+        tello.send_command("command".to_string()).await;
         // // println!("After Command");
-        // sleep(Duration::from_secs(3)).await;
+        sleep(Duration::from_secs(3)).await;
 
         // tello.send_command("takeoff".to_string()).await;
 
         // sleep(Duration::from_secs(3)).await;
 
-        tello.send_command("land".to_string()).await;
-    // }
+        // tello.send_command("land".to_string()).await;
+    }
     
 }
