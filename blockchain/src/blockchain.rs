@@ -21,6 +21,15 @@ pub struct Data {
     pub command: String
 }
 
+impl Data {
+    pub fn new(id: String, command: String) -> Self {
+        Data {
+            id,
+            command
+        }
+    }
+}
+
 impl Block {
     pub fn new(index: u64, data: Vec<Data>, previous_hash: String) -> Self {
         Block {

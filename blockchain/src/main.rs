@@ -1,36 +1,15 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use instance::{config, setup};
-use openssl::ex_data::Index;
-use std::fmt::format;
-use std::sync::Mutex;
-use lazy_static::lazy_static;
-use serde::{Serialize, Deserialize};
-use serde_json::json;
-use std::env;
 use tokio;
 
 mod p2p;
 
 mod blockchain;
-use blockchain::{Blockchain, Block};
-
-use local_ip_address;
-
-use std::fs::OpenOptions;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
 
 mod instance;
-
+use config::{Result, Node, Location, UpdateNode, BlockData};
+use config::{BLOCKCHAIN, NODES, IPADDR, PORT};
 mod auth;
-
-lazy_static! {
-    static ref BLOCKCHAIN: Mutex<Blockchain> = Mutex::new(Blockchain::new());
-    static ref NODES: Mutex<Vec<config::Node>> = Mutex::new(Vec::new());
-    static ref IPADDR: Mutex<String> = Mutex::new(local_ip_address::local_ip().unwrap().to_string());
-    static ref PORT: Mutex<String> = Mutex::new(config::GENESIS_PORT.to_string());
-    static ref NODE_TYPE: Mutex<String> = Mutex::new(auth::get_my_node_type());
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -57,18 +36,18 @@ async fn main() -> std::io::Result<()> {
             .route("/add-block", web::post().to(check))
             .route("/broadcast-nodelist", web::post().to(broadcast_nodelist))
             .route("/delete-node", web::post().to(delete_node))
+            .route("/get-location", web::get().to(get_location))
+            .route("/change-remote-mode", web::post().to(change_remote_mode))
     })
     .bind(format!("0.0.0.0:{}", my_port))?
     .run()
     .await
 }
 
-async fn check(req_block_data: web::Json<config::BlockData>) -> impl Responder {
+async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
     let block_data = req_block_data.clone();
     let check_result: bool = p2p::vote_request(block_data).await;
-    let response_message = config::Result {
-        result : check_result,
-    };
+    let response_message = Result::new(check_result);
 
     // DEBUG
     println!("VOTE Result : {}", &check_result);
@@ -87,10 +66,7 @@ async fn check(req_block_data: web::Json<config::BlockData>) -> impl Responder {
         let cmd = req_block_data.command.clone();
         println!("ip {}", &my_ip);
         println!("cmd : {}", &cmd);
-        let block = blockchain::Data{
-            id : my_ip.clone(),
-            command : cmd
-        };
+        let block = blockchain::Data::new(req_block_data.id.clone(), cmd);
 
         // DEBUG
         println!("Block : {:?}", &block);
@@ -110,7 +86,7 @@ async fn check(req_block_data: web::Json<config::BlockData>) -> impl Responder {
     }
 }
 
-async fn register_node(node_info: web::Json<config::Node>) -> impl Responder {
+async fn register_node(node_info: web::Json<Node>) -> impl Responder {
     let node = node_info.into_inner();
     let mut nodes = NODES.lock().unwrap();
 
@@ -122,13 +98,11 @@ async fn register_node(node_info: web::Json<config::Node>) -> impl Responder {
     }
 }
 
-async fn consensus(block_data: web::Json<config::BlockData>) -> impl Responder {
+async fn consensus(block_data: web::Json<BlockData>) -> impl Responder {
     let result = p2p::vote(block_data).await;
 
-    let response_message = config::Result {
-        result : result
-    };
-
+    let response_message = Result::new(result);
+    
     HttpResponse::Ok().json(response_message)
 }
 
@@ -162,7 +136,7 @@ async fn broadcast_block(block_data: web::Json<blockchain::Block>) -> impl Respo
     HttpResponse::Ok().json("Block added")
 }
 
-async fn broadcast_nodelist(node_list: web::Json<Vec<config::Node>>) -> impl Responder {
+async fn broadcast_nodelist(node_list: web::Json<Vec<Node>>) -> impl Responder {
     let mut pre_nodelist = NODES.lock().unwrap();
     let new_node_list = node_list.into_inner();
 
@@ -171,21 +145,58 @@ async fn broadcast_nodelist(node_list: web::Json<Vec<config::Node>>) -> impl Res
     HttpResponse::Ok().json("nodelist updated!")
 }
 
-async fn delete_node(node_info : web::Json<config::UpdateNode>) -> impl Responder {
+async fn delete_node(node_info : web::Json<UpdateNode>) -> impl Responder {
     let node_info = node_info.into_inner();
 
     let mut node_list = NODES.lock().unwrap();
 
     node_list.retain(|node| node.address != node_info.delete_ip);
 
-    let new_node = config::Node{
-        address : node_info.update_ip,
-        node_type : node_info.node_type
-    };
-
+    let new_node = Node::new(node_info.update_ip, node_info.node_type);
+    
     node_list.push(new_node);
 
     p2p::broadcast_nodelist(node_list.clone()).await;
 
     HttpResponse::Ok().json("Updated!")
+}
+
+async fn get_location() -> impl Responder {
+    // Location xyz
+    let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
+
+    let reponse = Location::new(x, y, z);
+    
+    HttpResponse::Ok().json(reponse)
+}
+
+async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
+    let req_data = request.into_inner();
+
+    let check_result = p2p::vote_request(req_data.clone()).await;
+    
+    if check_result {
+        let mut blockchain = BLOCKCHAIN.lock().unwrap();
+        let block = blockchain::Data::new(req_data.id.clone(), req_data.command.clone());
+        let new_block = blockchain.add_block(block);
+
+        p2p::global_update(new_block, IPADDR.lock().unwrap().clone()).await;
+
+        let change_result = p2p::change_remote_mode().await;
+
+        if change_result {
+            HttpResponse::Ok().json("REMOTE DONE")
+        }
+
+        else {
+            HttpResponse::BadRequest().json("REMOTE FAILED")
+        }
+    }
+
+    else {
+        HttpResponse::Unauthorized().json("Not Allowed")
+    }   
+
+    
+    
 }

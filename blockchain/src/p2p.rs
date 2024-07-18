@@ -1,8 +1,9 @@
-use actix_web::body;
+use actix_web::{body, HttpResponse, Responder};
 use actix_web::web::Json;
 use openssl::conf;
 use reqwest::{Client, NoProxy, StatusCode};
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 use tokio::io::Repeat;
 use std::collections::HashSet;
 use std::fmt::format;
@@ -10,13 +11,14 @@ use std::fs::{self, read_link, OpenOptions};
 use std::net::Ipv4Addr;
 use std::sync::MutexGuard;
 use std::time::Duration;
-use std::vec;
+use std::{result, vec};
 
 use local_ip_address;
 use tokio;
 
-use crate::instance::config::{self, Node};
-use crate::{auth, blockchain, get_nodes, IPADDR, NODE_TYPE, PORT, NODES};
+use crate::instance::config::{self, Node, UpdateNode, GENESIS_NODE, GENESIS_PORT};
+use crate::instance::config::{NODES, BLOCKCHAIN, IPADDR, NODE_TYPE};
+use crate::{auth, blockchain, get_nodes};
 
 /*
 p2p.rs는 블록체인 서버가 행동할때 필요한 함수를 보유하고 있음.
@@ -38,11 +40,7 @@ pub async fn start_monitoring(init_ip: String) {
                 .timeout(Duration::from_millis(1000)) // millisecond
                 .build()
                 .unwrap();
-            let body = config::UpdateNode{
-                delete_ip : previous_ip.clone(),
-                update_ip : my_ip.clone(),
-                node_type : NODE_TYPE.lock().unwrap().clone()
-            };
+            let body = UpdateNode::new(previous_ip.clone(), my_ip.clone(), NODE_TYPE.lock().unwrap().clone());
             let url = format!("http:{}:{}/delete-node", config::GENESIS_NODE, config::GENESIS_PORT);
 
             match client.post(url).json(&body).send().await {
@@ -261,5 +259,35 @@ pub async fn global_update(block_data: blockchain::Block, ip: String) {
             }
         }
         
+    }
+}
+
+pub async fn change_remote_mode() -> bool {
+    let my_ip = IPADDR.lock().unwrap().clone();
+    let my_type = NODE_TYPE.lock().unwrap().clone();
+
+    let node_info = UpdateNode::new(my_ip, "None".to_owned(), my_type);
+
+    let client = Client::builder()
+        .timeout(Duration::from_millis(1000))
+        .build()
+        .unwrap();
+
+    let url = format!("http://{}:{}/delete-node", GENESIS_NODE, GENESIS_PORT);
+
+    match client.post(url).json(&node_info).send().await {
+        Ok(response) => {
+            // Remote mode start
+
+            let result = true;
+            result
+        },
+
+        Err(e) => {
+            println!("DELETE ERROR : IS GENESIS ALIVE? : {}",e);
+            
+            let result = false;
+            result
+        },
     }
 }
