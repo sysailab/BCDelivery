@@ -1,15 +1,5 @@
-use actix_web::{body, HttpResponse, Responder};
 use actix_web::web::Json;
-use openssl::conf;
-use reqwest::{Client, NoProxy, StatusCode};
-use serde::{Serialize, Deserialize};
-use serde_json::json;
-use tokio::io::Repeat;
-use std::collections::HashSet;
-use std::fmt::format;
-use std::fs::{self, read_link, OpenOptions};
-use std::net::Ipv4Addr;
-use std::sync::MutexGuard;
+use reqwest::{Client, StatusCode};
 use std::time::Duration;
 use std::{result, vec};
 
@@ -24,45 +14,6 @@ use crate::{auth, blockchain, get_nodes};
 p2p.rs는 블록체인 서버가 행동할때 필요한 함수를 보유하고 있음.
 포함되는 함수는, 네트워크 초기설정, 네트워크 모니터링, 합의 요청, 합의 진행, 블록 추가 가 있음.
 */
-
-
-pub async fn start_monitoring(init_ip: String) {
-    // 주기적으로 IP 확인하여 이전 인터넷 환경과 다를 경우 Genesis 노드에게 업데이트 요청
-    // 모니터링 주기는 config의 monitoring_time 을 통해 설정됨
-    let mut previous_ip = init_ip;
-    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(config::MONITORING_TIME));
-    loop {
-        interval.tick().await;
-        let my_ip = local_ip_address::local_ip().unwrap().to_string();
-
-        if previous_ip != my_ip {
-            let client = Client::builder()
-                .timeout(Duration::from_millis(1000)) // millisecond
-                .build()
-                .unwrap();
-            let body = UpdateNode::new(previous_ip.clone(), my_ip.clone(), NODE_TYPE.lock().unwrap().clone());
-            let url = format!("http:{}:{}/delete-node", config::GENESIS_NODE, config::GENESIS_PORT);
-
-            match client.post(url).json(&body).send().await {
-                Ok(response) => {
-                    if response.status() == StatusCode::OK {
-                        println!("Update success");
-
-                        previous_ip = my_ip.clone();
-
-                        let mut ipaddr = IPADDR.lock().unwrap();
-                        *ipaddr = my_ip;                        
-                    }
-                },
-
-                Err(e) => {
-                    println!("REQUEST FAIL : {}", e);
-                },
-            }
-        }
-            
-    }
-}
 
 pub async fn broadcast_nodelist(nodelist: Vec<config::Node>) {
     // 업데이트 된 최신의 Nodelist의 노드들에게 자신이 보유한 nodelist를 전달함

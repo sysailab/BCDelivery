@@ -1,18 +1,33 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use instance::config::{CMD_PORT, GENESIS_NODE, STATE_PORT, VIDEO_PORT};
 use instance::{config, setup};
 use tokio;
 
 mod p2p;
-
+mod drone;
 mod blockchain;
-
+mod remote;
 mod instance;
+mod monitoring;
+
 use config::{Result, Node, Location, UpdateNode, BlockData};
-use config::{BLOCKCHAIN, NODES, IPADDR, PORT};
+use config::{BLOCKCHAIN, NODES, IPADDR, PORT, STATE};
 mod auth;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let mut tello_ip = "0.0.0.0".to_owned();
+    
+    if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
+        tello_ip = "192.168.50.13".to_owned();
+    }
+
+    else {
+        tello_ip = local_ip_address::local_ip().unwrap().to_string();
+    }
+
+    remote::init_tello("drone_id".to_owned(), tello_ip, CMD_PORT, STATE_PORT, VIDEO_PORT).await;
+
     let (my_ip, my_port) = setup::setup_mode().await;    
     
     println!("my addr is {}:{}", &my_ip, &my_port);
@@ -23,7 +38,8 @@ async fn main() -> std::io::Result<()> {
     }
     println!("Nodes info : {:?}", nodeinfo);
 
-    tokio::spawn(p2p::start_monitoring(my_ip.clone()));
+    tokio::spawn(monitoring::network_monitoring(my_ip.clone()));
+    tokio::spawn(monitoring::cmd_monitoring());
 
     HttpServer::new(|| {
         App::new()
@@ -66,7 +82,7 @@ async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
         let cmd = req_block_data.command.clone();
         println!("ip {}", &my_ip);
         println!("cmd : {}", &cmd);
-        let block = blockchain::Data::new(req_block_data.id.clone(), cmd);
+        let block = blockchain::Data::new(req_block_data.id.clone(), cmd, STATE.lock().unwrap().clone());
 
         // DEBUG
         println!("Block : {:?}", &block);
@@ -177,7 +193,7 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
     
     if check_result {
         let mut blockchain = BLOCKCHAIN.lock().unwrap();
-        let block = blockchain::Data::new(req_data.id.clone(), req_data.command.clone());
+        let block = blockchain::Data::new(req_data.id.clone(), req_data.command.clone(), req_data.command.clone());
         let new_block = blockchain.add_block(block);
 
         p2p::global_update(new_block, IPADDR.lock().unwrap().clone()).await;

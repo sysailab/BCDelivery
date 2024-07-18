@@ -18,14 +18,16 @@ pub struct Block {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Data {
     pub id: String,
-    pub command: String
+    pub command: String,
+    pub state: String
 }
 
 impl Data {
-    pub fn new(id: String, command: String) -> Self {
+    pub fn new(id: String, command: String, state: String) -> Self {
         Data {
             id,
-            command
+            command,
+            state
         }
     }
 }
@@ -85,7 +87,8 @@ impl Blockchain {
 
         let data = Data {
             id : "Genesis".to_owned(),
-            command : "Genesis".to_owned()
+            command : "Genesis".to_owned(),
+            state : "Genesis".to_owned()
         };
 
         genesis_data.push(data);
