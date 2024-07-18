@@ -67,7 +67,7 @@ class RoboEP(BaseRobot):
                 elif cmd == CMD_CHASSIS_X_DOWN:
                     self.ep_chassis.move(x=-0.1, y=0, z=0, xy_speed=1).wait_for_completed()
                     # self.ep_chassis.move(x=-0.3, y=0, z=0, xy_speed=1)
-                    self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=2)
+                    
                     
                 elif cmd == CMD_CHASSIS_Y_UP:
                     self.ep_chassis.move(x=0, y=0.1, z=0, xy_speed=1).wait_for_completed()

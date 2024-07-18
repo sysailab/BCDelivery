@@ -59,7 +59,6 @@ async def control(request: Request, robot_control: Control):
         else:
             return {"status ": "except", "msg" : f"{robot_rep}"}
                 
-        # return "a"
     
     
 def robot_initialize(_robot_id) -> RoboEP:
