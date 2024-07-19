@@ -182,6 +182,8 @@ async fn get_location() -> impl Responder {
     let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
 
     let reponse = Location::new(x, y, z);
+
+    // println!("200 : {:?}", reponse);
     
     HttpResponse::Ok().json(reponse)
 }
