@@ -1,6 +1,7 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use instance::config::{CMD_PORT, GENESIS_NODE, STATE_PORT, VIDEO_PORT};
 use instance::{config, setup};
+use remote::MYLOCATION;
 use tokio;
 
 mod p2p;
@@ -179,9 +180,9 @@ async fn delete_node(node_info : web::Json<UpdateNode>) -> impl Responder {
 
 async fn get_location() -> impl Responder {
     // Location xyz
-    let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
+    //let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
 
-    let reponse = Location::new(x, y, z);
+    let reponse = MYLOCATION.lock().unwrap().clone();
 
     // println!("200 : {:?}", reponse);
     
