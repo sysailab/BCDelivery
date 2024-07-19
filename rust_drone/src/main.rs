@@ -1,6 +1,6 @@
 mod drone;
 use tokio::time::{sleep, Duration};
-
+// static TELLO: Lazy<Mutex<Option<Arc<Tello>>>> = Lazy::new(|| Mutex::new(None));
 
 #[tokio::main]
 async fn main() {
@@ -15,15 +15,26 @@ async fn main() {
 
     // loop{
 
-        // tello.send_command("command".to_string()).await;
+        tello.send_command("command".to_string()).await;
         // // println!("After Command");
-        // sleep(Duration::from_secs(3)).await;
+        sleep(Duration::from_secs(3)).await;
 
-        // tello.send_command("takeoff".to_string()).await;
+        tello.send_command("streamon".to_string()).await;
+        // // println!("After Command");
+        sleep(Duration::from_secs(3)).await;
 
-        // sleep(Duration::from_secs(3)).await;
+        tello.send_command("streamoff".to_string()).await;
+        // // println!("After Command");
+        sleep(Duration::from_secs(3)).await;  
+
+
+        tello.send_command("takeoff".to_string()).await;
+
+        sleep(Duration::from_secs(3)).await;
 
         tello.send_command("land".to_string()).await;
+        
+        sleep(Duration::from_secs(20)).await;
     // }
     
 }
