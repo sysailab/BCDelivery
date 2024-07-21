@@ -1,5 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use instance::config::{CMD_PORT, GENESIS_NODE, STATE_PORT, VIDEO_PORT};
+use drone::TELLO;
+use instance::config::{CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, VIDEO_PORT};
 use instance::{config, setup};
 use remote::MYLOCATION;
 use tokio;
@@ -55,6 +56,7 @@ async fn main() -> std::io::Result<()> {
             .route("/delete-node", web::post().to(delete_node))
             .route("/get-location", web::get().to(get_location))
             .route("/change-remote-mode", web::post().to(change_remote_mode))
+            .route("/get-video", web::get().to(get_video))
     })
     .bind(format!("0.0.0.0:{}", my_port))?
     .run()
@@ -83,7 +85,7 @@ async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
         let cmd = req_block_data.command.clone();
         println!("ip {}", &my_ip);
         println!("cmd : {}", &cmd);
-        let block = blockchain::Data::new(req_block_data.id.clone(), cmd, STATE.lock().unwrap().clone());
+        let block = blockchain::Data::new(req_block_data.id.clone(), cmd, req_block_data.state.clone());
 
         // DEBUG
         println!("Block : {:?}", &block);
@@ -215,7 +217,25 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
     else {
         HttpResponse::Unauthorized().json("Not Allowed")
     }   
+}
 
-    
-    
+async fn get_video() -> impl Responder {
+    let remote_state = REMOTEMODE.lock().unwrap().clone();
+    if remote_state {
+        // Lock the outer Arc<Mutex<Option<Tello>>> to access the inner Option<Tello>
+        let tello_option = TELLO.lock().await; // Directly use the TELLO static Lazy instance
+        println!("REQ");
+        // Check if there is a Tello instance inside the Option
+        if let Some(tello) = &*tello_option {
+            println!("REQ2");
+            let video_buffer = tello.video_buffer.lock().await; // Properly awaited
+            HttpResponse::Ok().content_type("video/mpeg").body(video_buffer.clone())
+        } else {
+            println!("REQ3");
+            HttpResponse::NotFound().json("Tello drone is not initialized")
+        }
+    } else {
+        println!("REQ4");
+        HttpResponse::NotFound().json("Node is not in REMOTE MODE")
+    }
 }

@@ -5,6 +5,9 @@ use tokio::task;
 use tokio::time::{sleep, Duration};
 use std::sync::Arc;
 use serde_json::{json, to_string, Value};
+use actix::{Actor, StreamHandler};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web_actors::ws;
 
 use crate::instance::config::Location;
 use crate::remote::MYLOCATION;
@@ -22,7 +25,8 @@ pub struct Tello {
     cmd_sender: mpsc::Sender<String>,
     state_socket: Arc<UdpSocket>,
     video_socket: Arc<UdpSocket>,
-    cmd_socket: Arc<UdpSocket>
+    cmd_socket: Arc<UdpSocket>,
+    pub video_buffer: Arc<Mutex<Vec<u8>>>
 }
 
 impl Tello {
@@ -30,7 +34,7 @@ impl Tello {
         let state_socket = UdpSocket::bind(("0.0.0.0", state_port)).await.expect("Couldn't bind to state port");
         let video_socket = UdpSocket::bind(("0.0.0.0", video_port)).await.expect("Couldn't bind to video port");
         let cmd_socket: UdpSocket = UdpSocket::bind(("0.0.0.0", cmd_port)).await.expect("Couldn't bind to cmd port");
-
+        let video_buffer = Arc::new(Mutex::new(Vec::new()));
 
         let (cmd_sender, cmd_receiver) = mpsc::channel(32);
 
@@ -44,7 +48,8 @@ impl Tello {
             cmd_sender,
             state_socket: Arc::new(state_socket),
             video_socket: Arc::new(video_socket),
-            cmd_socket:  Arc::new(cmd_socket)
+            cmd_socket:  Arc::new(cmd_socket),
+            video_buffer: video_buffer.clone()
         };
         
         let cmd_socket_clone: Arc<UdpSocket> = tello.cmd_socket.clone();
@@ -60,7 +65,7 @@ impl Tello {
         });
 
         tokio::spawn(async move {
-            Tello::video_stream_loop(video_socket_clone).await;
+            Tello::video_stream_loop(video_socket_clone, video_buffer.clone()).await;
         });
         
         let cmd_socket_clone = tello.cmd_socket.clone();
@@ -177,14 +182,14 @@ impl Tello {
     }
 
 
-    async fn video_stream_loop(video_socket: Arc<UdpSocket>) {
+    async fn video_stream_loop(video_socket: Arc<UdpSocket>, video_buffer: Arc<Mutex<Vec<u8>>>) {
         let mut buf = [0; 2048];
-
         loop {
             match video_socket.recv_from(&mut buf).await {
-                Ok((n, addr)) => {
-                    println!("Received video from {}: {} bytes", addr, n);
-                    // Process video frame here
+                Ok((n, _addr)) => {
+                    let mut buffer_lock = video_buffer.lock().await;
+                    buffer_lock.clear();
+                    buffer_lock.extend_from_slice(&buf[..n]);
                 }
                 Err(e) => {
                     println!("Failed to receive video: {}", e);
@@ -192,7 +197,11 @@ impl Tello {
             }
         }
     }
+
+    
 }
+
+
 
 // #[tokio::main]
 // async fn main() {
