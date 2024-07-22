@@ -1,6 +1,8 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use image::{ImageOutputFormat, ImageBuffer, RgbImage};
+use std::io::Cursor;
 use drone::TELLO;
-use instance::config::{CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, VIDEO_PORT};
+use instance::config::{CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
 use instance::{config, setup};
 use remote::MYLOCATION;
 use tokio;
@@ -21,7 +23,7 @@ async fn main() -> std::io::Result<()> {
     let mut tello_ip = "0.0.0.0".to_owned();
     
     if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
-        tello_ip = "192.168.50.13".to_owned();
+        tello_ip = "192.168.50.11".to_owned();
     }
 
     else {
@@ -222,14 +224,20 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
 async fn get_video() -> impl Responder {
     let remote_state = REMOTEMODE.lock().unwrap().clone();
     if remote_state {
-        // Lock the outer Arc<Mutex<Option<Tello>>> to access the inner Option<Tello>
-        let tello_option = TELLO.lock().await; // Directly use the TELLO static Lazy instance
+        let tello_option = TELLO.lock().await; 
         println!("REQ");
-        // Check if there is a Tello instance inside the Option
         if let Some(tello) = &*tello_option {
+            let node_type = NODE_TYPE.lock().unwrap().clone();
+            //remote::cmd_start(STREAM_CMD.to_string(), node_type).await;
+            let video_buffer = tello.video_buffer.lock().await;
             println!("REQ2");
-            let video_buffer = tello.video_buffer.lock().await; // Properly awaited
-            HttpResponse::Ok().content_type("video/mpeg").body(video_buffer.clone())
+
+            // 비디오 프레임 데이터를 JPEG 이미지로 인코딩
+            let img: RgbImage = ImageBuffer::from_raw(640, 480, video_buffer.to_vec()).unwrap();  // 가정: 프레임 크기가 640x480
+            let mut buf = Cursor::new(Vec::new());
+            img.write_to(&mut buf, ImageOutputFormat::Jpeg(80)).unwrap(); // JPEG 품질은 80으로 설정
+
+            HttpResponse::Ok().content_type("image/jpeg").body(buf.into_inner())
         } else {
             println!("REQ3");
             HttpResponse::NotFound().json("Tello drone is not initialized")
