@@ -112,7 +112,7 @@ impl Tello {
                 Ok((n, addr)) => {
                     match std::str::from_utf8(&buf[..n]) {
                         Ok(state_str) => {
-                            println!("Received state from {}: {}", addr, state_str);
+                            // println!("Received state from {}: {}", addr, state_str);
                         }
                         Err(e) => {
                             println!("Failed to convert bytes to string: {}", e);

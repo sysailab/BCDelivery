@@ -1,6 +1,6 @@
 import asyncio
 import robomaster
-from robomaster import robot, camera
+from robomaster import robot, camera, conn
 import time
 from .base_model import BaseRobot
 import threading
@@ -21,6 +21,8 @@ class RoboEP(BaseRobot):
         self.ep_chassis = None
         self.ep_gimbal = None
         self.ep_camera = None        
+        
+        self.distance = None
         
         self.is_stream = False
             
@@ -45,7 +47,15 @@ class RoboEP(BaseRobot):
         try:
             self.ep_robot.initialize(conn_type='sta', sn= self.sn)
             self.ep_chassis = self.ep_robot.chassis
-            self.ep_camera = self.ep_robot.camera     
+            self.ep_camera = self.ep_robot.camera
+            
+            # Add
+            self.ep_robot.armor.set_hit_sensitivity(comp="all", sensitivity=100)
+            self.ep_robot.armor.sub_hit_event(self.hit_callback)
+            self.ep_robot.sensor.sub_distance(freq=20, callback=self.tof_callback)            
+            
+            self.start_stream()        
+        
             await self.rep_queue.put(0)       
             
         except Exception as e:
@@ -59,15 +69,13 @@ class RoboEP(BaseRobot):
             cmd = await self.cmd_queue.get()
             try:
                 if cmd == CMD_CHASSIS_X_UP:
-                    # self.ep_chassis.move(x=0.1, y=0, z=0, xy_speed=1).wait_for_completed()
-                    self.ep_chassis.drive_speed(x=1, y=0, z=0, timeout=2)
+                    self.ep_chassis.move(x=0.3, y=0, z=0, xy_speed=3).wait_for_completed()
+                    # self.ep_chassis.drive_speed(x=1, y=0, z=0, timeout=2)
                     
                     # self.ep_chassis.move(x=0.3, y=0, z=0, xy_speed=1)
-                    
                 elif cmd == CMD_CHASSIS_X_DOWN:
-                    self.ep_chassis.move(x=-0.1, y=0, z=0, xy_speed=1).wait_for_completed()
-                    # self.ep_chassis.move(x=-0.3, y=0, z=0, xy_speed=1)
-                    
+                    # self.ep_chassis.move(x=-0.1, y=0, z=0, xy_speed=1).wait_for_completed()
+                    self.ep_chassis.move(x=-0.3, y=0, z=0, xy_speed=1).wait_for_completed()
                     
                 elif cmd == CMD_CHASSIS_Y_UP:
                     self.ep_chassis.move(x=0, y=0.1, z=0, xy_speed=1).wait_for_completed()
@@ -117,6 +125,17 @@ class RoboEP(BaseRobot):
         if self.is_stream:
             self.ep_camera.stop_video_stream()
             self.is_stream = False
+    
+    def hit_callback(self, sub_info):
+        print(f"sub info : {sub_info}")
+        # pass
+    
+    def tof_callback(self, tof_info):
+        # print(tof_info)
+        # print(type(tof_info))
+        self.distance = tof_info[0]
+    
+        
         
     async def coroutine_start(self):   
         self.async_tasks = [
