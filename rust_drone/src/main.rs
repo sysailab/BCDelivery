@@ -13,28 +13,55 @@ async fn main() {
     )
     .await;
 
-    // loop{
+    let mut is_ok: bool = false;
 
-        tello.send_command("command".to_string()).await;
-        // // println!("After Command");
-        sleep(Duration::from_secs(3)).await;
+    loop{
 
-        tello.send_command("streamon".to_string()).await;
-        // // println!("After Command");
-        sleep(Duration::from_secs(3)).await;
+        if (!is_ok)
+        {   
+            is_ok = true;
 
-        tello.send_command("streamoff".to_string()).await;
-        // // println!("After Command");
-        sleep(Duration::from_secs(3)).await;  
-
-
-        tello.send_command("takeoff".to_string()).await;
-
-        sleep(Duration::from_secs(3)).await;
-
-        tello.send_command("land".to_string()).await;
-        
-        sleep(Duration::from_secs(20)).await;
-    // }
+            tello.send_command("command".to_string()).await;
+            // // println!("After Command");
+            sleep(Duration::from_secs(3)).await;
     
+            tello.send_command("streamon".to_string()).await;
+            // // println!("After Command");
+            sleep(Duration::from_secs(3)).await;
+        }
+
+        else if (is_ok)
+        {
+            if let Some(frame) = tello.get_latest_video_frame() {
+                println!("Latest video frame: {} bytes", frame.len());
+            }
+
+            sleep(Duration::from_secs(1)).await;
+        }
+
+        
+
+
+
+        // tello.send_command("command".to_string()).await;
+        // // // println!("After Command");
+        // sleep(Duration::from_secs(3)).await;
+
+        // tello.send_command("streamon".to_string()).await;
+        // // // println!("After Command");
+        // sleep(Duration::from_secs(3)).await;
+
+        // tello.send_command("streamoff".to_string()).await;
+        // // // println!("After Command");
+        // sleep(Duration::from_secs(3)).await;  
+
+
+        // tello.send_command("takeoff".to_string()).await;
+
+        // sleep(Duration::from_secs(3)).await;
+
+        // tello.send_command("land".to_string()).await;
+        
+        // sleep(Duration::from_secs(20)).await;
+    }
 }
