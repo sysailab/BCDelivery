@@ -47,7 +47,11 @@ class BaseRobot(ABC):
 
     # def __del__(self):
     #     print("Mother")
-        
+    
+    def __del__(self):
+        super().__del__()
+        print("Mother")
+    
     @abstractmethod
     async def initialize(self):
         pass
@@ -74,5 +78,9 @@ class BaseRobot(ABC):
     
     @abstractmethod
     def coroutine_start(self):
+        pass
+    
+    @abstractmethod
+    def destroy(self):
         pass
     
