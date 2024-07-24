@@ -4,6 +4,7 @@ from robomaster import robot, camera, conn
 import time
 from .base_model import BaseRobot
 import threading
+import weakref
 
 CMD_CHASSIS_X_UP = "w"
 CMD_CHASSIS_X_DOWN = "s"
@@ -23,10 +24,13 @@ class RoboEP(BaseRobot):
         self.ep_camera = None        
         
         self.distance = None
+        self.image = None
         
         self.is_stream = False
+        self.is_running = True
             
-        
+        self._finalizer = weakref.finalize(self, self._cleanup)
+            
         asyncio.create_task(self.coroutine_start())    
         
         threading.Thread(target=self.video_stream , daemon=True).start()
@@ -40,8 +44,15 @@ class RoboEP(BaseRobot):
     #             self.receiver(),
     #             self.update_state(),
     #             self.video_stream()         
+
+    def _cleanup(self):
+        self.is_running = False
+        print(f"{self.sn}: Deleted")
         
-                        
+    # def __del__(self):
+    #     print("child")
+    #     super().__del__()
+                         
     async def initialize(self):
         self.ep_robot = robot.Robot()
         try:
@@ -65,7 +76,7 @@ class RoboEP(BaseRobot):
         await self.cmd_queue.put(cmd)
     
     async def sender(self):
-        while True:
+        while self.is_running:
             cmd = await self.cmd_queue.get()
             try:
                 if cmd == CMD_CHASSIS_X_UP:
@@ -98,23 +109,20 @@ class RoboEP(BaseRobot):
         pass
     
     def video_stream(self):
-        while True:
+        while self.is_running:
             if self.is_stream:
                 try:
-                    img = self.ep_camera.read_cv2_image(strategy="newest")
+                    self.image = self.ep_camera.read_cv2_image(strategy="newest")
                     # print(1)
-                    if self.video_queue.full():
-                        self.video_queue.get()
-                        self.video_queue.put(img)         
+                    # if self.video_queue.full():
+                    #     self.video_queue.get()
+                    #     self.video_queue.put(img)         
                     
-                    else:
-                        self.video_queue.put(img)            
+                    # else:
+                    #     self.video_queue.put(img)            
                         
                 except:
-                    self.video_queue.put(1)
-            # else:
-            #     print("No Stream")
-        
+                    continue    
         
     def start_stream(self):
         if not self.is_stream:
