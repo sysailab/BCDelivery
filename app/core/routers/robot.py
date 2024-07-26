@@ -71,7 +71,7 @@ async def control(request: Request, robot_control: Control):
         await robots[robot_control.id].initialize()
                 
         if await robots[robot_control.id].rep_queue.get() == 1:
-            del robots[robot_control.id]
+            robot_destroy(robot_control.id)
             return ResponseFormat.err_command(robot_control.id)
         
         await robots[robot_control.id].command(robot_control.cmd)
@@ -112,7 +112,7 @@ async def control_sn(request: Request, robot_sn:str, cmd:str):
         await robots[robot_sn].initialize()
                 
         if await robots[robot_sn].rep_queue.get() == 1:
-            del robots[robot_sn]
+            robot_destroy(robot_sn)
             return ResponseFormat.err_command(robot_sn)
         
         await robots[robot_sn].command(cmd)
@@ -189,7 +189,7 @@ async def stream_video(request: Request, robot_sn: str):
         await robots[robot_sn].initialize()
                 
         if await robots[robot_sn].rep_queue.get() == 1:
-            del robots[robot_sn]
+            robot_destroy(robot_sn)
             return ResponseFormat.err_command(robot_sn)    
         
         try:                    
@@ -215,11 +215,7 @@ async def control(request: Request, robot_sn: str):
     
     if robot_sn in robots:
         
-        print(gc.get_referrers(robots[robot_sn]))
-        
-        del robots[robot_sn]
-        
-        # print(gc.get_referrers(robots[robot_sn]))
+        robot_destroy(robot_sn)
         
         return {"Robot Deleted"}
     
@@ -239,3 +235,14 @@ def robot_initialize(_robot_sn) -> RoboEP:
     robots[_robot_sn] = RoboEP(_robot_sn)
     
     return True
+
+def robot_destroy(_robot_sn) -> bool:
+    try:
+        robots[_robot_sn].destroy()
+        del robots[_robot_sn]
+    
+        return True
+    
+    except:
+        return False
+        
