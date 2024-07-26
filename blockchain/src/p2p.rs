@@ -6,7 +6,8 @@ use std::{result, vec};
 use local_ip_address;
 use tokio;
 
-use crate::instance::config::{self, Node, UpdateNode, GENESIS_NODE, GENESIS_PORT};
+use crate::blockchain::{Block, Blockchain};
+use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT};
 use crate::instance::config::{NODES, BLOCKCHAIN, IPADDR, NODE_TYPE};
 use crate::instance::setup::clear_remote_mode;
 use crate::{auth, blockchain, get_nodes};
@@ -38,6 +39,69 @@ pub async fn broadcast_nodelist(nodelist: Vec<config::Node>) {
                 },
             }
         }
+    }
+}
+
+pub async fn check_chain_valid() {
+    let genesis_ip = GENESIS_NODE.clone();
+    let port = GENESIS_PORT.clone();
+
+    let url = format!("http://{}:{}/is-valid", genesis_ip, port);
+    let client = Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+        .unwrap();
+
+    match client.get(&url).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                match response.json::<config::BlockInfo>().await {
+                    Ok(blockinfo) => {
+                        let my_len = BLOCKLENGTH.lock().unwrap().clone();
+
+                        if blockinfo.length > my_len {
+                            get_all_blockchain();
+                        }
+                    },
+                    Err(e) => {
+                        println!("CHECK RESPONSE TYPE ERROR : {}", e);
+                    },
+                }
+            }
+        },
+        Err(e) => {
+            println!("CHECK RESPONSE ERROR : {}", e);
+        },
+    }
+}
+
+async fn get_all_blockchain() {
+    let genesis_ip = GENESIS_NODE.clone();
+    let port = GENESIS_PORT.clone();
+
+    let url = format!("http://{}:{}/get-all-blockchain", genesis_ip, port);
+    let client = Client::builder()
+        .timeout(Duration::from_millis(1000))
+        .build()
+        .unwrap();
+
+    match client.get(url).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                match response.json::<Vec<Block>>().await {
+                    Ok(blocks) => {
+                        let mut blockchain_lock = BLOCKCHAIN.lock().unwrap();
+                        blockchain_lock.blocks = blocks;
+                    },
+                    Err(e) => {
+                        println!("RESPONSE DATA TYPE ERROR : {}", e);
+                    },
+                }
+            }
+        },
+        Err(e) => {
+            println!("RESPONSE ERRO : {}", e);
+        },
     }
 }
 
@@ -80,6 +144,7 @@ pub async fn send(ip: &str, port: &str) -> Vec<config::Node> {
                 if response.status() == StatusCode::OK {
                     match response.json::<Vec<config::Node>>().await {
                         Ok(node_list) => {
+                            check_chain_valid().await;
 
                             return node_list;
                         }
@@ -96,6 +161,7 @@ pub async fn send(ip: &str, port: &str) -> Vec<config::Node> {
                     match response.json::<Vec<config::Node>>().await {
                         Ok(node_list) => {
                             println!("NODE ALREADY EXIST... UPDATE NODE LIST!");
+                            check_chain_valid().await;
 
                             return node_list;
                         }

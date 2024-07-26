@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use sha2::{Sha256, Digest};
 
-use crate::instance::config;
+use crate::instance::config::{self, BLOCKLENGTH, DIFFICULTY};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -80,7 +80,7 @@ impl Blockchain {
     pub fn new() -> Self {
         let mut blockchain = Blockchain {
             blocks: Vec::new(),
-            difficulty: config::DIFFICULTY,
+            difficulty: DIFFICULTY,
         };
 
         let mut genesis_data = Vec::new();
@@ -107,11 +107,21 @@ impl Blockchain {
         new_block.mine_block(self.difficulty);
         self.blocks.push(new_block.clone());
 
+        self.update_block_length();
+
         return new_block.clone();
     }
 
     pub fn update_block(&mut self, block: Block) {
         self.blocks.push(block);
+        self.update_block_length();
+    }
+
+    pub fn update_block_length(&mut self) {
+        let mut block_length_lock = BLOCKLENGTH.lock().unwrap();
+        let block_len = self.blocks.len();
+
+        *block_length_lock = block_len.to_string();
     }
 
     pub fn is_valid(&self, block: &Block) -> bool {

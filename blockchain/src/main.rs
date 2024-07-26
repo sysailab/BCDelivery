@@ -1,8 +1,8 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 use drone::TELLO;
-use instance::config::{CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
+use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
 use instance::{config, setup};
 use remote::MYLOCATION;
 use tokio;
@@ -14,7 +14,7 @@ mod remote;
 mod instance;
 mod monitoring;
 
-use config::{Result, Node, Location, UpdateNode, BlockData};
+use config::{Result, Node, Location, UpdateNode, BlockData, BlockInfo};
 use config::{BLOCKCHAIN, NODES, IPADDR, PORT, STATE};
 mod auth;
 
@@ -59,13 +59,24 @@ async fn main() -> std::io::Result<()> {
             .route("/get-location", web::get().to(get_location))
             .route("/change-remote-mode", web::post().to(change_remote_mode))
             .route("/get-video", web::get().to(get_video))
+            .route("/is-valid", web::get().to(is_valid))
     })
     .bind(format!("0.0.0.0:{}", my_port))?
     .run()
     .await
 }
 
+async fn is_valid() -> impl Responder {
+    let my_length = BLOCKLENGTH.lock().unwrap().clone();
+    let my_ip = IPADDR.lock().unwrap().clone();
+
+    let response = BlockInfo::new(my_length, my_ip);
+
+    HttpResponse::Ok().json(response)    
+}
+
 async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
+    p2p::check_chain_valid().await;
     let block_data = req_block_data.clone();
     let check_result: bool = p2p::vote_request(block_data).await;
     let response_message = Result::new(check_result);
@@ -92,7 +103,7 @@ async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
         // DEBUG
         println!("Block : {:?}", &block);
 
-        let new_block = blockchain.add_block(block);
+        let new_block = blockchain.add_block(block);      
 
         // DEBUG
         println!("block data : {:?}", &new_block);
@@ -222,28 +233,39 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
 }
 
 async fn get_video() -> impl Responder {
+    // TODO : 현기 서버로 넘김
+
+
     let remote_state = REMOTEMODE.lock().unwrap().clone();
     if remote_state {
-        let tello_option = TELLO.lock().await; 
-        println!("REQ");
-        if let Some(tello) = &*tello_option {
-            let node_type = NODE_TYPE.lock().unwrap().clone();
-            //remote::cmd_start(STREAM_CMD.to_string(), node_type).await;
-            let video_buffer = tello.video_buffer.lock().await;
-            println!("REQ2");
-
-            // 비디오 프레임 데이터를 JPEG 이미지로 인코딩
-            let img: RgbImage = ImageBuffer::from_raw(640, 480, video_buffer.to_vec()).unwrap();  // 가정: 프레임 크기가 640x480
-            let mut buf = Cursor::new(Vec::new());
-            img.write_to(&mut buf, ImageOutputFormat::Jpeg(80)).unwrap(); // JPEG 품질은 80으로 설정
-
-            HttpResponse::Ok().content_type("image/jpeg").body(buf.into_inner())
-        } else {
-            println!("REQ3");
-            HttpResponse::NotFound().json("Tello drone is not initialized")
-        }
-    } else {
-        println!("REQ4");
-        HttpResponse::NotFound().json("Node is not in REMOTE MODE")
+        HttpResponse::Ok().json("REMOTE MODE ON")
     }
+    else {
+        HttpResponse::BadRequest().json("REMOTE MODE OFF")
+    }
+
+    //     let tello_option = TELLO.lock().await;
+    //     if let Some(tello) = &*tello_option {
+    //         let video_buffer_lock = tello.get_latest_video_buf().await;
+    //         if let Some(video_buffer) = video_buffer_lock {
+    //             match decode_h264_to_jpeg(&video_buffer) {
+    //                 Ok(img_buf) => {
+    //                     let mut buf = Cursor::new(Vec::new());
+    //                     buf.write_all(&img_buf).unwrap();
+    //                     HttpResponse::Ok().content_type("image/jpeg").body(buf.into_inner())
+    //                 },
+    //                 Err(e) => {
+    //                     println!("Decoding failed: {}", e);
+    //                     HttpResponse::InternalServerError().json("Decoding failed")
+    //                 }
+    //             }
+    //         } else {
+    //             HttpResponse::NotFound().json("No video frame available")
+    //         }
+    //     } else {
+    //         HttpResponse::NotFound().json("Tello drone is not initialized")
+    //     }
+    // } else {
+    //     HttpResponse::NotFound().json("Node is not in REMOTE MODE")
+    // }
 }

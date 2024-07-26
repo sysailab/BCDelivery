@@ -2,7 +2,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task;
 use tokio::time::{sleep, Duration};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub struct Tello {
     drone_id: String,
@@ -13,7 +13,8 @@ pub struct Tello {
     cmd_sender: mpsc::Sender<String>,
     state_socket: Arc<UdpSocket>,
     video_socket: Arc<UdpSocket>,
-    cmd_socket: Arc<UdpSocket>
+    cmd_socket: Arc<UdpSocket>,
+    latest_video_frame: Arc<Mutex<Option<Vec<u8>>>>
 }
 
 impl Tello {
@@ -21,7 +22,6 @@ impl Tello {
         let state_socket = UdpSocket::bind(("0.0.0.0", state_port)).await.expect("Couldn't bind to state port");
         let video_socket = UdpSocket::bind(("0.0.0.0", video_port)).await.expect("Couldn't bind to video port");
         let cmd_socket: UdpSocket = UdpSocket::bind(("0.0.0.0", cmd_port)).await.expect("Couldn't bind to cmd port");
-
 
         let (cmd_sender, cmd_receiver) = mpsc::channel(32);
 
@@ -35,12 +35,15 @@ impl Tello {
             cmd_sender,
             state_socket: Arc::new(state_socket),
             video_socket: Arc::new(video_socket),
-            cmd_socket:  Arc::new(cmd_socket)
+            cmd_socket:  Arc::new(cmd_socket),
+            latest_video_frame: Arc::new(Mutex::new(None)),
         };
         
         let cmd_socket_clone: Arc<UdpSocket> = tello.cmd_socket.clone();
         let state_socket_clone = tello.state_socket.clone();
         let video_socket_clone = tello.video_socket.clone();
+        let video_frame_clone = tello.latest_video_frame.clone();
+
 
         tokio::spawn(async move {
             Tello::command_sender_loop(cmd_receiver, drone_ip, cmd_socket_clone, cmd_port).await;
@@ -51,7 +54,7 @@ impl Tello {
         });
 
         tokio::spawn(async move {
-            Tello::video_stream_loop(video_socket_clone).await;
+            Tello::video_stream_loop(video_socket_clone, video_frame_clone).await;
         });
         
         let cmd_socket_clone = tello.cmd_socket.clone();
@@ -146,14 +149,16 @@ impl Tello {
     }
 
 
-    async fn video_stream_loop(video_socket: Arc<UdpSocket>) {
+    async fn video_stream_loop(video_socket: Arc<UdpSocket>, video_frame: Arc<Mutex<Option<Vec<u8>>>>)  {
         let mut buf = [0; 2048];
 
         loop {
             match video_socket.recv_from(&mut buf).await {
                 Ok((n, addr)) => {
-                    println!("Received video from {}: {} bytes", addr, n);
+                    // println!("Received video from {}: {} bytes", addr, n);
                     // Process video frame here
+                    let mut frame = video_frame.lock().unwrap();
+                    *frame = Some(buf[..n].to_vec());
                 }
                 Err(e) => {
                     println!("Failed to receive video: {}", e);
@@ -161,6 +166,12 @@ impl Tello {
             }
         }
     }
+
+    pub fn get_latest_video_frame(&self) -> Option<Vec<u8>> {
+        let frame = self.latest_video_frame.lock().unwrap();
+        frame.clone()
+    }    
+
 }
 
 // #[tokio::main]
