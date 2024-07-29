@@ -3,6 +3,8 @@ use std::result;
 use std::time::Duration;
 use tokio;
 
+use crate::car::car_send;
+use crate::drone::drone_send_cmd;
 use crate::{blockchain, remote};
 use crate::instance::config::{self, UpdateNode, BLOCKCHAIN, CMD_MONITORING_TIME, GENESIS_NODE, IPADDR, NETWORK_MONITORING_TIME, NODE_TYPE, STATE};
 
@@ -54,7 +56,20 @@ pub async fn cmd_monitoring() {
 
         if result {
             init_state = cur_state;
-            remote::cmd_start(cmd, node_type).await;
+            let mut my_node= String::new();
+            {
+                let node_type = NODE_TYPE.lock().unwrap().clone();
+                my_node = node_type; 
+            }
+
+            if my_node == "drone" {
+                drone_send_cmd(cmd).await;
+            }
+
+            else if my_node == "car" {
+                car_send(cmd).await;
+            }
+            // remote::cmd_start(cmd, node_type).await;
         }
     }
 }

@@ -1,14 +1,15 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
-use std::io::{Cursor, Write};
+use std::io::{self, Cursor, Write};
 use drone::TELLO;
-use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
+use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEIP, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
 use instance::{config, setup};
 use remote::MYLOCATION;
 use tokio;
 
 mod p2p;
 mod drone;
+mod car;
 mod blockchain;
 mod remote;
 mod instance;
@@ -20,6 +21,24 @@ mod auth;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let mut input_type = String::new();
+    println!("Enter NODE TPYE");
+    io::stdin().read_line(&mut input_type)?;
+    let input_type = input_type.trim();
+
+    let mut remote_ip = String::new();
+    println!("Enter REMOTE NODE IP");
+    io::stdin().read_line(&mut remote_ip)?;
+    let remote_ip = remote_ip.trim();
+
+    {
+        let mut node_type = NODE_TYPE.lock().unwrap();
+        *node_type = input_type.to_string();
+
+        let mut remote_addr = REMOTEIP.lock().unwrap();
+        *remote_addr = remote_ip.to_string();
+    }
+
     let mut tello_ip = "0.0.0.0".to_owned();
     
     if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
@@ -30,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         tello_ip = local_ip_address::local_ip().unwrap().to_string();
     }
 
-    remote::init_tello("drone_id".to_owned(), tello_ip, CMD_PORT, STATE_PORT, VIDEO_PORT).await;
+    //remote::init_tello("drone_id".to_owned(), tello_ip, CMD_PORT, STATE_PORT, VIDEO_PORT).await;
 
     let (my_ip, my_port) = setup::setup_mode().await;    
     

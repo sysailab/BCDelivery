@@ -1,3 +1,4 @@
+use reqwest::{Client, StatusCode};
 use tokio::net::UdpSocket;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use once_cell::sync::Lazy;
@@ -9,7 +10,7 @@ use actix::{Actor, StreamHandler};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 
-use crate::instance::config::{Location, NAL_UNIT};
+use crate::instance::config::{Location, RemoteServerReq, NAL_UNIT, REMOTEIP, REMOTE_SERVER};
 use crate::remote::MYLOCATION;
 
 pub static TELLO: Lazy<Arc<Mutex<Option<Tello>>>> = Lazy::new(|| {
@@ -206,6 +207,47 @@ impl Tello {
     }
 }
 
+pub async fn drone_send_cmd(cmd: String) {
+    let client = Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+        .unwrap();
+    let url = REMOTE_SERVER.clone();
+    let id = REMOTEIP.lock().unwrap().clone();
+    let cmd = cmd;
+    let description = String::new();
+    let body = RemoteServerReq::new(id, cmd, description);
+
+    match client.post(url).json(&body).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                println!("REMOTE CMD SEND");
+            }
+        },
+        Err(e) => {
+            println!("REQUEST ERROR : {}",e);
+        },
+    }
+}
+
+pub async fn drone_get_video() {
+    let client = Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+        .unwrap();
+    let url = REMOTE_SERVER.clone();
+
+    match client.get(url).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                println!("REMOTE CMD SEND");
+            }
+        },
+        Err(e) => {
+            println!("REQUEST ERROR : {}",e);
+        },
+    }
+}
 
 
 // #[tokio::main]

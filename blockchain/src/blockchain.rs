@@ -1,9 +1,10 @@
 // blockchain.rs
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs::File, time::{SystemTime, UNIX_EPOCH}};
+use std::io::prelude::*;
 use sha2::{Sha256, Digest};
 
-use crate::instance::config::{self, BLOCKLENGTH, DIFFICULTY};
+use crate::instance::config::{self, BLOCKCHAINPATH, BLOCKLENGTH, DIFFICULTY};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -71,6 +72,7 @@ impl Block {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Blockchain {
     pub blocks: Vec<Block>,
     pub difficulty: usize,
@@ -149,4 +151,23 @@ impl Blockchain {
 
 
     
+}
+
+pub fn check_blockchain_exist() {
+    let mut file = File::create(BLOCKCHAINPATH).expect("FILE CREATE ERROR");
+    
+    let genesis_blockchain = Blockchain::new();
+    let data = serde_json::to_string(&genesis_blockchain).expect("JSON ERROR");
+
+    file.write_all(data.as_bytes()).expect("FILE WRITE ERROR");
+}
+
+pub fn get_local_blockchain() -> Blockchain {
+    let mut file = File::open(BLOCKCHAINPATH).expect("FILE NOT EXIST");
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents).expect("FILE READ ERROR");
+    let local_blockchain: Blockchain = serde_json::from_str(&contents).expect("DATA ERROR");
+
+    local_blockchain
 }
