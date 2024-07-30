@@ -63,6 +63,7 @@ pub async fn cmd_monitoring() {
             }
 
             if my_node == "drone" {
+                println!("{}", cmd);
                 drone_send_cmd(cmd).await;
             }
 
