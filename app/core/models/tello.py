@@ -47,7 +47,9 @@ class Tello:
         self.cmd_max_retry = 2
         
         self.cmd_buffer_size = 1024
-         
+
+        self.state = 0
+        
         self.thread_start()
     
     def command(self, cmd):
@@ -101,8 +103,8 @@ class Tello:
         while True:
             bytes_, address = self.state_socket.recvfrom(1024)
             str_ = bytes_.decode()
-            
-            print(f" % \033[33m{self.drone_id} - {address}\033[0m State Updater : From Tello :: {str_}")
+            self.state = str_
+            # print(f" % \033[33m{self.drone_id} - {address}\033[0m State Updater : From Tello :: {str_}")
                         
     def video_stream(self):
         video_container = av.open(self.stream_url)       

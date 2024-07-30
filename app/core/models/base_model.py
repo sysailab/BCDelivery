@@ -15,7 +15,7 @@ class Control(BaseModel):
         description: str
     """
     
-    id: str
+    ip: str
     cmd: str
     description: Optional[str]
     

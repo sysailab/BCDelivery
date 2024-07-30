@@ -49,181 +49,210 @@ threading.Thread(target=robot_scan, daemon=True).start()
 @router.post("/control/")
 async def control(request: Request, robot_control: Control):
     
-    if robot_control.id in robots:
-        await robots[robot_control.id].command(robot_control.cmd)
+    if robot_control.ip in robots:
+        await robots[robot_control.ip].command(robot_control.cmd)
         
-        robot_rep = await robots[robot_control.id].rep_queue.get()
+        robot_rep = await robots[robot_control.ip].rep_queue.get()
     
         if robot_rep == 0:
-            return ResponseFormat.ok_command(robot_control.id, robot_control.cmd)
+            content, status_code = ResponseFormat.ok_command(robot_control.ip, robot_control.cmd)
+            return Response(content, status_code)
         
         elif robot_rep == 1:
-            return ResponseFormat.err_command(robot_control.id)
+            content, status_code = ResponseFormat.err_command(robot_control.ip)
+            return Response(content, status_code)            
             
         else:
-            return ResponseFormat.err_except()
+            content, status_code = ResponseFormat.err_except()
+            return Response(content, status_code)
     
     else:
-        if not robot_initialize(robot_control.id):
-            return ResponseFormat.err_found(robot_control.id)
+        if not robot_initialize(robot_control.ip):
+            content, status_code = ResponseFormat.err_found(robot_control.ip)
+            return Response(content, status_code)            
         
         # 로봇 수신 가능 확인
-        await robots[robot_control.id].initialize()
+        await robots[robot_control.ip].initialize()
                 
-        if await robots[robot_control.id].rep_queue.get() == 1:
-            robot_destroy(robot_control.id)
-            return ResponseFormat.err_command(robot_control.id)
+        if await robots[robot_control.ip].rep_queue.get() == 1:
+            robot_destroy(robot_control.ip)
+            
+            content, status_code = ResponseFormat.err_command(robot_control.ip)
+            return Response(content, status_code)               
         
-        await robots[robot_control.id].command(robot_control.cmd)
+        await robots[robot_control.ip].command(robot_control.cmd)
         
-        robot_rep = await robots[robot_control.id].rep_queue.get()
+        robot_rep = await robots[robot_control.ip].rep_queue.get()
     
         if robot_rep == 0:
-            return ResponseFormat.ok_command(robot_control.id, robot_control.cmd)
+            content, status_code = ResponseFormat.ok_command(robot_control.ip, robot_control.cmd)
+            return Response(content, status_code)
         
         elif robot_rep == 1:
-            return ResponseFormat.err_command(robot_control.id)
+            content, status_code = ResponseFormat.err_command(robot_control.ip)
+            return Response(content, status_code)           
             
         else:
-            return ResponseFormat.err_except()
+            content, status_code = ResponseFormat.err_except()
+            return Response(content, status_code)                       
               
 @router.get("/control")
-async def control_sn(request: Request, robot_sn:str, cmd:str):
+async def control_ip(request: Request, robot_ip:str, cmd:str):
 
-    if robot_sn in robots:
-        await robots[robot_sn].command(cmd)
+    if robot_ip in robots:
+        await robots[robot_ip].command(cmd)
         
-        robot_rep = await robots[robot_sn].rep_queue.get()
+        robot_rep = await robots[robot_ip].rep_queue.get()
     
         if robot_rep == 0:
-            return ResponseFormat.ok_command(robot_sn, cmd)
+            content, status_code = ResponseFormat.ok_command(robot_ip, cmd)
+            return Response(content, status_code)
         
         elif robot_rep == 1:
-            return ResponseFormat.err_command(robot_sn)
+            content, status_code = ResponseFormat.err_command(robot_ip)
+            return Response(content, status_code)           
             
         else:
-            return ResponseFormat.err_except()
-    
+            content, status_code = ResponseFormat.err_except()
+            return Response(content, status_code) 
     else:
-        if not robot_initialize(robot_sn):
-            return ResponseFormat.err_found(robot_sn)
+        if not robot_initialize(robot_ip):
+            
+            content, status_code = ResponseFormat.err_found(robot_ip)
+            return Response(content, status_code)             
         
         # 로봇 수신 가능 확인
-        await robots[robot_sn].initialize()
+        await robots[robot_ip].initialize()
                 
-        if await robots[robot_sn].rep_queue.get() == 1:
-            robot_destroy(robot_sn)
-            return ResponseFormat.err_command(robot_sn)
+        if await robots[robot_ip].rep_queue.get() == 1:
+            robot_destroy(robot_ip)
+            
+            content, status_code = ResponseFormat.err_command(robot_ip)
+            return Response(content, status_code)             
         
-        await robots[robot_sn].command(cmd)
+        await robots[robot_ip].command(cmd)
         
-        robot_rep = await robots[robot_sn].rep_queue.get()
+        robot_rep = await robots[robot_ip].rep_queue.get()
     
         if robot_rep == 0:
-            return ResponseFormat.ok_command(robot_sn, cmd)
+            content, status_code = ResponseFormat.ok_command(robot_ip, cmd)
+            return Response(content, status_code)
         
         elif robot_rep == 1:
-            return ResponseFormat.err_command(robot_sn)
+            content, status_code = ResponseFormat.err_command(robot_ip)
+            return Response(content, status_code)           
             
         else:
-            return ResponseFormat.err_except()
+            content, status_code = ResponseFormat.err_except()
+            return Response(content, status_code) 
       
 @router.get("/scan/")
 async def scan(request: Request):
-    return ResponseFormat.ok_scan(ip_dict)
+    
+    if ip_dict:
+        content, status_code = ResponseFormat.ok_scan(ip_dict)
+        return Response(content, status_code)
+    
+    else:
+        content, status_code = ResponseFormat.err_no_data(ip_dict)
+        return Response(content, status_code)
 
 @router.get("/info")
-async def control(request: Request, robot_sn: str):
-    if robot_sn in robots:
-        if not robots[robot_sn].is_stream:
-            return ResponseFormat.err_stream(robot_sn)
+async def control(request: Request, robot_ip: str):
+    if robot_ip in robots:
+        if not robots[robot_ip].is_stream:
+            content, status_code = ResponseFormat.err_stream(robot_ip)
+            return Response(content, status_code)            
         
         else:
             try:
                 # image_data = robots[robot_sn].video_queue.get()
-                image_data = base64.b64encode(robots[robot_sn].video_queue.get())
+                image_data = base64.b64encode(robots[robot_ip].video_queue.get())
                 # decode_data = base64.b64encode(image_data)
                 # print(image_data)
             except:
-                return ResponseFormat.err_no_data(robot_sn)
+                content, status_code = ResponseFormat.err_no_data(robot_ip)
+                return Response(content, status_code)                 
             
-            # data = {
-            #     "id": robot_sn,
-            #     "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),
-            #     "imageData": image_data,
-            #     "distance": robots[robot_sn].distance
-            # }
-            # robots[robot_sn]
+            content, status_code = ResponseFormat.ok_info(id= robot_ip, time= datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),\
+                imageData= image_data, distance= robots[robot_ip].distance)
             
-            return ResponseFormat.ok_info(id= robot_sn, time= datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),\
-                imageData= image_data, distance= robots[robot_sn].distance)
-            # return data
+            return Response(content, status_code)
             
     else:
-        return ResponseFormat.err_found(robot_sn)
+        content, status_code = ResponseFormat.err_found(robot_ip)
+        return Response(content, status_code)
      
 @router.get("/video")
-async def stream_video(request: Request, robot_sn: str):
-    if robot_sn in robots:
+async def stream_video(request: Request, robot_ip: str):
+    if robot_ip in robots:
         try:
             # frame = robots[robot_sn].video_queue.get_nowait()
-            frame = robots[robot_sn].image
+            frame = robots[robot_ip].image
             # print(robots[robot_sn].image)
             
             ret, buffer = cv2.imencode('.jpg', frame)
             
             if ret:
                 video_frame = buffer.tobytes()  
+                print(f"type : {type(io.BytesIO(video_frame))}")
                 return StreamingResponse(io.BytesIO(video_frame), media_type="image/jpeg")
             else:
-                return ResponseFormat.err_convert()
+                content, status_code = ResponseFormat.err_convert()
+                return Response(content, status_code)
         
         # except queue.Empty:
         except Exception:
-            return Response(content="No frame available. Maybe Object is turned off.", status_code=500)
+            content, status_code = ResponseFormat.err_no_data(robot_ip)
+            return Response(content, status_code)            
         
     else:     
-        if not robot_initialize(robot_sn):
-            return ResponseFormat.err_found(robot_sn)
+        if not robot_initialize(robot_ip):
+            content, status_code = ResponseFormat.err_found(robot_ip)
+            return Response(content, status_code)
         
-        await robots[robot_sn].initialize()
+        await robots[robot_ip].initialize()
                 
-        if await robots[robot_sn].rep_queue.get() == 1:
-            robot_destroy(robot_sn)
-            return ResponseFormat.err_command(robot_sn)    
+        if await robots[robot_ip].rep_queue.get() == 1:
+            robot_destroy(robot_ip)
+            content, status_code = ResponseFormat.err_command(robot_ip)
+            return Response(content, status_code)            
         
         try:                    
             # frame = robots[robot_sn].video_queue.get_nowait()
-            frame = robots[robot_sn].image
+            frame = robots[robot_ip].image
             ret, buffer = cv2.imencode('.jpg', frame)
             
             if ret:
                 video_frame = buffer.tobytes()  
                 return StreamingResponse(io.BytesIO(video_frame), media_type="image/jpeg")
             else:
-                return ResponseFormat.err_convert()
+                content, status_code = ResponseFormat.err_convert()
+                return Response(content, status_code)                
             
         # except queue.Empty:
         except Exception:
-            return Response(content= "No frame available. Maybe Object is turned off", status_code=500)
+            content, status_code = ResponseFormat.err_no_data(robot_ip)
+            return Response(content, status_code)            
             
         # return Response(content= "임시 에러", status_code=500)
      
      
-@router.delete("/{robot_sn}")
-async def control(request: Request, robot_sn: str):
+@router.delete("/{robot_ip}")
+async def control(request: Request, robot_ip: str):
     
-    if robot_sn in robots:
+    if robot_ip in robots:
         
-        robot_destroy(robot_sn)
+        robot_destroy(robot_ip)
         
-        return {"Robot Deleted"}
+        content, status_code = ResponseFormat.ok_delete(robot_ip)
+        return Response(content, status_code)
     
     else:
-        
-        return {"No Robot Found"}
+        content, status_code = ResponseFormat.err_found(robot_ip)
+        return Response(content, status_code)
 
-def robot_initialize(_robot_sn) -> RoboEP:
+def robot_initialize(_robot_ip) -> RoboEP:
     # try:
     #     robot_ip = robot_ip_table[_robot_sn]["ip_address"]
                 
@@ -231,15 +260,18 @@ def robot_initialize(_robot_sn) -> RoboEP:
     #     return False
     
     # robot_sn = robot_ip_table[_robot_sn]["sn"]
-    
-    robots[_robot_sn] = RoboEP(_robot_sn)
-    
-    return True
-
-def robot_destroy(_robot_sn) -> bool:
     try:
-        robots[_robot_sn].destroy()
-        del robots[_robot_sn]
+        robots[_robot_ip] = RoboEP(ip_dict[_robot_ip])        
+        return True
+    
+    except Exception as e:
+        print(e)
+        return False
+
+def robot_destroy(_robot_ip) -> bool:
+    try:
+        robots[_robot_ip].destroy()
+        del robots[_robot_ip]
     
         return True
     
