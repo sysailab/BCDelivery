@@ -15,7 +15,7 @@ class Control(BaseModel):
         description: str
     """
     
-    id: str
+    ip: str
     cmd: str
     description: Optional[str]
     
@@ -40,11 +40,18 @@ class BaseRobot(ABC):
         
         self.cmd_queue = asyncio.Queue()
         # self.video_queue = asyncio.Queue(maxsize=1)
-        self.video_queue = queue.Queue(maxsize=1)
+        # self.video_queue = queue.Queue(maxsize=1)
         self.rep_queue = asyncio.Queue()
         self.async_event = asyncio.Event()
         self.async_tasks = []
 
+    # def __del__(self):
+    #     print("Mother")
+    
+    def __del__(self):
+        super().__del__()
+        print("Mother")
+    
     @abstractmethod
     async def initialize(self):
         pass
@@ -71,5 +78,9 @@ class BaseRobot(ABC):
     
     @abstractmethod
     def coroutine_start(self):
+        pass
+    
+    @abstractmethod
+    def destroy(self):
         pass
     

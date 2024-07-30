@@ -1,10 +1,55 @@
+from abc import ABC, abstractmethod
 import asyncio
-import robomaster
-from robomaster import robot, camera, conn
-import time
-from .base_model import BaseRobot
 import threading
-import weakref
+from robomaster import robot, camera, conn
+
+class BaseRobot(ABC):
+    def __init__(self) -> None:
+        super().__init__()
+        
+        self.cmd_queue = asyncio.Queue()
+        # self.video_queue = asyncio.Queue(maxsize=1)
+        # self.video_queue = queue.Queue(maxsize=1)
+        self.rep_queue = asyncio.Queue()
+        self.async_event = asyncio.Event()
+        self.async_tasks = []
+
+    # def __del__(self):
+    #     print("Mother")
+    
+    def __del__(self):
+        super().__del__()
+        print("Mother")
+        
+        
+        
+    @abstractmethod
+    async def initialize(self):
+        pass
+        
+    @abstractmethod
+    def command(self, cmd):
+        pass
+    
+    @abstractmethod
+    async def sender(self):
+        pass
+    
+    @abstractmethod
+    async def receiver(self):
+        pass
+    
+    @abstractmethod
+    async def update_state(self):
+        pass
+    
+    @abstractmethod
+    def video_stream(self):
+        pass
+    
+    @abstractmethod
+    def coroutine_start(self):
+        pass
 
 CMD_CHASSIS_X_UP = "w"
 CMD_CHASSIS_X_DOWN = "s"
@@ -45,10 +90,18 @@ class RoboEP(BaseRobot):
     #             self.update_state(),
     #             self.video_stream()         
 
-    def destroy(self):
-        self.is_running = False
-        self.ep_robot.close()
-        self.stop_stream()
+    def __del__(self):
+        super().__del__()
+        print("I'm Dead.")
+        
+
+    # def _cleanup(self):
+    #     self.is_running = False
+    #     print(f"{self.sn}: Deleted")
+        
+    # def __del__(self):
+    #     print("child")
+    #     super().__del__()
                          
     async def initialize(self):
         self.ep_robot = robot.Robot()
@@ -119,7 +172,7 @@ class RoboEP(BaseRobot):
                     #     self.video_queue.put(img)            
                         
                 except:
-                    continue
+                    continue    
         
     def start_stream(self):
         if not self.is_stream:
@@ -139,6 +192,8 @@ class RoboEP(BaseRobot):
         # print(tof_info)
         # print(type(tof_info))
         self.distance = tof_info[0]
+    
+        
         
     async def coroutine_start(self):   
         self.async_tasks = [
@@ -149,60 +204,5 @@ class RoboEP(BaseRobot):
                 # self.video_stream()            
         ]
 
-        await asyncio.gather(*self.async_tasks)
-        
-        # asyncio.gather(*self.async_tasks)
-        
-#     async def robot_close(self):
-#         self.ep_robot.close()
-        
-        
-#     def robot_command(self):
-#         pass
-    
-#     async def robot_camera(self):
-#         pass
-    
-#     async def robo_init(self):
-#         await asyncio.gather(
-#                         self.perform_task(1),
-#                         self.perform_task(2),
-#                         self.perform_task(3)
-#                     )
-        
-#     async def perform_task(self, task_id):
-#         print(f"{task_id} will perform")
-#         total = 0
-#         for i in range(101):
-#             total += i
-#             print(f"{self.obj_num} / {task_id} : total = {total}")
-#             await asyncio.sleep(10 / 100)        
-    
-# async def roop_exe():
-#     i = 1
-#     while True:
-#         print("while")
-#         # await asyncio.gather(RoboEP(i).robo_init())
-#         asyncio.create_task(RoboEP(i).robo_init())
-#         await asyncio.sleep(1)
-#         i += 1    
-    
-
-    
-# if __name__ == "__main__":
-#     asyncio.run(RoboEP("3JKCK980030EKR").robot_initialize())
-    
-    # asyncio.run(roop_exe())
-    # i = 1
-    # while True:
-    #     print("while")
-    #     asyncio.gather(RoboEP(i).robo_init())
-    #     time.sleep(1)
-    #     i += 1
-        # robo_ep1 = RoboEP
-        # robo_ep2 = RoboEP
-        
-        # asyncio.run(init())
-    
-    
+        await asyncio.gather(*self.async_tasks)    
     
