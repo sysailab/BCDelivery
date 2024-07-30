@@ -385,6 +385,7 @@ dependencies = [
  "actix 0.12.0",
  "actix-web",
  "actix-web-actors",
+ "base64 0.22.1",
  "image",
  "lazy_static",
  "local-ip-address",

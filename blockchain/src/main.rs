@@ -1,5 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
+use remote_server::{get_drone_image, get_drone_loc};
 use std::io::{self, Cursor, Write};
 use drone::TELLO;
 use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEIP, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
@@ -14,6 +15,7 @@ mod blockchain;
 mod remote;
 mod instance;
 mod monitoring;
+mod remote_server;
 
 use config::{Result, Node, Location, UpdateNode, BlockData, BlockInfo};
 use config::{BLOCKCHAIN, NODES, IPADDR, PORT, STATE};
@@ -216,11 +218,12 @@ async fn get_location() -> impl Responder {
     // Location xyz
     //let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
 
-    let reponse = MYLOCATION.lock().unwrap().clone();
+    // let reponse = MYLOCATION.lock().unwrap().clone();
+    let result = get_drone_loc().await;
 
     // println!("200 : {:?}", reponse);
     
-    HttpResponse::Ok().json(reponse)
+    HttpResponse::Ok().json(result)
 }
 
 async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
@@ -253,11 +256,11 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
 
 async fn get_video() -> impl Responder {
     // TODO : 현기 서버로 넘김
-
-
+    
     let remote_state = REMOTEMODE.lock().unwrap().clone();
     if remote_state {
-        HttpResponse::Ok().json("REMOTE MODE ON")
+        let result = get_drone_image().await;
+        HttpResponse::Ok().json(result)
     }
     else {
         HttpResponse::BadRequest().json("REMOTE MODE OFF")
