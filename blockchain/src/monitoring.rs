@@ -6,7 +6,7 @@ use tokio;
 use crate::car::car_send;
 use crate::drone::drone_send_cmd;
 use crate::{blockchain, remote};
-use crate::instance::config::{self, UpdateNode, BLOCKCHAIN, CMD_MONITORING_TIME, GENESIS_NODE, IPADDR, NETWORK_MONITORING_TIME, NODE_TYPE, STATE};
+use crate::instance::config::{self, UpdateNode, BLOCKCHAIN, CMD_MONITORING_TIME, GENESIS_NODE, IPADDR, NETWORK_MONITORING_TIME, NODE_TYPE, REMOTEIP, STATE};
 
 pub async fn network_monitoring(init_ip: String) {
     // 주기적으로 IP 확인하여 이전 인터넷 환경과 다를 경우 Genesis 노드에게 업데이트 요청
@@ -78,7 +78,7 @@ pub async fn cmd_monitoring() {
 pub fn check(init_state: String) -> (bool, String, String, String) {
     let mut my_ip = String::new();
         {
-            let ip_lock = IPADDR.lock().unwrap().clone();
+            let ip_lock = REMOTEIP.lock().unwrap().clone();
             my_ip = ip_lock;
         }
         
