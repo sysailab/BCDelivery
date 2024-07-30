@@ -213,10 +213,10 @@ pub async fn drone_send_cmd(cmd: String) {
         .build()
         .unwrap();
     let url = format!("{}/drone/control/",REMOTE_SERVER.clone());
-    let id = REMOTEIP.lock().unwrap().clone();
+    let ip = REMOTEIP.lock().unwrap().clone();
     let cmd = cmd;
     let description = String::new();
-    let body = RemoteServerReq::new(id, cmd, description);
+    let body = RemoteServerReq::new(ip, cmd, description);
 
     match client.post(url).json(&body).send().await {
         Ok(response) => {

@@ -91,15 +91,15 @@ impl BlockInfo {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RemoteServerReq {
-    pub id: String,
+    pub ip: String,
     pub cmd: String,
     pub description: String
 }
 
 impl RemoteServerReq {
-    pub fn new(id: String, cmd: String, description: String) -> Self {
+    pub fn new(ip: String, cmd: String, description: String) -> Self {
         RemoteServerReq {
-            id,
+            ip,
             cmd,
             description
         }
