@@ -212,7 +212,7 @@ pub async fn drone_send_cmd(cmd: String) {
         .timeout(Duration::from_millis(500))
         .build()
         .unwrap();
-    let url = REMOTE_SERVER.clone();
+    let url = format!("{}/drone/control/",REMOTE_SERVER.clone());
     let id = REMOTEIP.lock().unwrap().clone();
     let cmd = cmd;
     let description = String::new();
