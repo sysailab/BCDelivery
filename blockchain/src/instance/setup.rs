@@ -1,6 +1,6 @@
 use std::env;
-
-use crate::{instance::config, IPADDR, PORT};
+use std::io::{self};
+use crate::{instance::config::{self, NODE_TYPE, REMOTEIP}, IPADDR, PORT};
 
 use super::config::REMOTEMODE;
 
@@ -48,3 +48,22 @@ pub async fn clear_remote_mode() {
     *remote_mode_lock = false;
 }
 
+pub fn local_node_setup() {
+    let mut input_type = String::new();
+    println!("Enter NODE TPYE");
+    io::stdin().read_line(&mut input_type).expect("INPUT TYPE ERROR");
+    let input_type = input_type.trim();
+
+    let mut remote_ip = String::new();
+    println!("Enter REMOTE NODE IP");
+    io::stdin().read_line(&mut remote_ip).expect("REMOTE IP ERROR");
+    let remote_ip = remote_ip.trim();
+
+    {
+        let mut node_type = NODE_TYPE.lock().unwrap();
+        *node_type = input_type.to_string();
+
+        let mut remote_addr = REMOTEIP.lock().unwrap();
+        *remote_addr = remote_ip.to_string();
+    }
+}

@@ -23,24 +23,6 @@ mod auth;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let mut input_type = String::new();
-    println!("Enter NODE TPYE");
-    io::stdin().read_line(&mut input_type)?;
-    let input_type = input_type.trim();
-
-    let mut remote_ip = String::new();
-    println!("Enter REMOTE NODE IP");
-    io::stdin().read_line(&mut remote_ip)?;
-    let remote_ip = remote_ip.trim();
-
-    {
-        let mut node_type = NODE_TYPE.lock().unwrap();
-        *node_type = input_type.to_string();
-
-        let mut remote_addr = REMOTEIP.lock().unwrap();
-        *remote_addr = remote_ip.to_string();
-    }
-
     let mut tello_ip = "0.0.0.0".to_owned();
     
     if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
