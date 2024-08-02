@@ -78,7 +78,7 @@ pub async fn cmd_monitoring() {
 pub fn check(init_state: String) -> (bool, String, String, String) {
     let mut my_ip = String::new();
     {
-        let ip_lock = REMOTEIP.lock().unwrap().clone();
+        let ip_lock = IPADDR.lock().unwrap().clone();
         println!("{}", &ip_lock);
         my_ip = ip_lock;
     }
