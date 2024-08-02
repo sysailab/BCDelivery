@@ -77,10 +77,11 @@ pub async fn cmd_monitoring() {
 
 pub fn check(init_state: String) -> (bool, String, String, String) {
     let mut my_ip = String::new();
-        {
-            let ip_lock = REMOTEIP.lock().unwrap().clone();
-            my_ip = ip_lock;
-        }
+    {
+        let ip_lock = REMOTEIP.lock().unwrap().clone();
+        println!("{}", &ip_lock);
+        my_ip = ip_lock;
+    }
         
     let mut last_block = blockchain::Block::new(0, vec![blockchain::Data::new(String::new(), String::new(), String::new())], String::new());
     {
@@ -90,14 +91,14 @@ pub fn check(init_state: String) -> (bool, String, String, String) {
                     
     for data in last_block.data.iter() {
         // DEBUG
-        if my_ip == GENESIS_NODE {
-            my_ip = "192.168.50.13".to_owned();
-        }
+        // if my_ip == GENESIS_NODE {
+        //     my_ip = "192.168.50.13".to_owned();
+        // }
 
-        println!("data : {:?}", &data);
+        //println!("data : {:?}", &data);
                 
         if &data.id == &my_ip {
-        
+            println!("data : {:?}", &data);
             if &data.state != &data.command{
         
                 if init_state != data.state {
@@ -119,6 +120,9 @@ pub fn check(init_state: String) -> (bool, String, String, String) {
                     return (result, cur_state, cmd, my_node_type)
                 }
             }
+        }
+        else {
+            println!("Else Debug Log {}:{}", &my_ip, &data.id);
         }
     }
 

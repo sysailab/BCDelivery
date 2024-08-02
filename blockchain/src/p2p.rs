@@ -9,7 +9,7 @@ use tokio;
 use crate::blockchain::{Block, Blockchain};
 use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT, KEYTYPE, PORT};
 use crate::instance::config::{NODES, BLOCKCHAIN, IPADDR, NODE_TYPE};
-use crate::instance::setup::{clear_remote_mode, local_node_setup};
+use crate::instance::setup::{clear_remote_mode, genesis_node_setup, local_node_setup};
 use crate::{auth, blockchain, get_nodes};
 
 /*
@@ -120,6 +120,8 @@ pub async fn send(ip: &str, port: &str) -> Vec<config::Node> {
         let genesis_node = config::Node::new(my_address, "Genesis".to_owned());
         let mut genesis_vec = Vec::new();
         genesis_vec.push(genesis_node);
+
+        genesis_node_setup();
 
         return genesis_vec; // Genesis Node 임을 반환
     }

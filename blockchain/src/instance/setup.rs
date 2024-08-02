@@ -67,3 +67,16 @@ pub fn local_node_setup() {
         *remote_addr = remote_ip.to_string();
     }
 }
+
+pub fn genesis_node_setup() {
+    let input_type = "Genesis";
+    let remote_ip = "Genesis";
+
+    {
+        let mut node_type = NODE_TYPE.lock().unwrap();
+        *node_type = input_type.to_string();
+
+        let mut remote_addr = REMOTEIP.lock().unwrap();
+        *remote_addr = remote_ip.to_string();
+    }
+}
