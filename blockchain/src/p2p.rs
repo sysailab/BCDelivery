@@ -7,7 +7,7 @@ use local_ip_address;
 use tokio;
 
 use crate::blockchain::{Block, Blockchain};
-use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT, KEYTYPE};
+use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT, KEYTYPE, PORT};
 use crate::instance::config::{NODES, BLOCKCHAIN, IPADDR, NODE_TYPE};
 use crate::instance::setup::{clear_remote_mode, local_node_setup};
 use crate::{auth, blockchain, get_nodes};
@@ -249,7 +249,8 @@ pub fn calculate_vote_result(result_list : Vec<config::Vote>) -> bool {
 pub async fn global_update(block_data: blockchain::Block, ip: String) {
     // 블록이 추가됨에 따라 가지고 있는 노드리스트를 통해 새로운 블록 추가를 요청함
     let my_ip = ip;
-
+    let my_port = GENESIS_PORT;
+    let my_addr = format!("{}:{}", my_ip, my_port);
     let body = &block_data;
 
     let client = Client::builder()
@@ -263,7 +264,7 @@ pub async fn global_update(block_data: blockchain::Block, ip: String) {
     println!("Node list : {:?}", &node_list);
     
     for node in &*node_list {
-        if &node.address != &my_ip {
+        if &node.address != &my_addr {
             let url = format!("http://{}/broadcast-block", &node.address);
             match client.post(&url).json(&body).send().await {
                 Ok(response) => {
