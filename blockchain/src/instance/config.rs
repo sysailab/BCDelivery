@@ -147,6 +147,8 @@ impl Location {
 //     pub node_type: String
 // }
 
+static Key_type: &str = "usb";
+
 
 lazy_static! {
     pub static ref BLOCKCHAIN: Mutex<blockchain::Blockchain> = Mutex::new(blockchain::Blockchain::new());
@@ -154,6 +156,7 @@ lazy_static! {
     pub static ref IPADDR: Mutex<String> = Mutex::new(local_ip_address::local_ip().unwrap().to_string());
     pub static ref PORT: Mutex<String> = Mutex::new(GENESIS_PORT.to_string());
     pub static ref NODE_TYPE: Mutex<String> = Mutex::new(auth::get_my_node_type());
+    pub static ref KEYTYPE: Mutex<String> = Mutex::new(Key_type.to_string());
     pub static ref STATE: Mutex<String> = Mutex::new(String::new());
     pub static ref REMOTEMODE: Mutex<bool> = Mutex::new(true);
     pub static ref BLOCKLENGTH: Mutex<String> = Mutex::new(String::new());

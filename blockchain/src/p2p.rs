@@ -7,7 +7,7 @@ use local_ip_address;
 use tokio;
 
 use crate::blockchain::{Block, Blockchain};
-use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT};
+use crate::instance::config::{self, Node, UpdateNode, BLOCKLENGTH, GENESIS_NODE, GENESIS_PORT, KEYTYPE};
 use crate::instance::config::{NODES, BLOCKCHAIN, IPADDR, NODE_TYPE};
 use crate::instance::setup::{clear_remote_mode, local_node_setup};
 use crate::{auth, blockchain, get_nodes};
@@ -188,7 +188,8 @@ pub async fn send(ip: &str, port: &str) -> Vec<config::Node> {
 
 pub async fn vote(block_data: Json<config::BlockData>) -> bool {
     // 키 즉 block_data.sign을 통해 해당 pem키로 서명이 진짜인지 확인함
-    auth::check_auth_valid(&block_data.node_type, &block_data.command, &block_data.sign)
+    let key_type = KEYTYPE.lock().unwrap().clone();
+    auth::check_auth_valid(&key_type, &block_data.command, &block_data.sign)
 }
 
 pub async fn vote_request(block_data: config::BlockData) -> bool {
