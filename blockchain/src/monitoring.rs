@@ -62,12 +62,12 @@ pub async fn cmd_monitoring() {
                 my_node = node_type; 
             }
 
-            if my_node == "drone" {
+            if my_node == "drone".to_string() {
                 println!("{}", cmd);
                 drone_send_cmd(cmd).await;
             }
 
-            else if my_node == "car" {
+            else if my_node == "car".to_string() {
                 car_send(cmd).await;
             }
             // remote::cmd_start(cmd, node_type).await;
