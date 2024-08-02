@@ -93,6 +93,8 @@ pub fn check(init_state: String) -> (bool, String, String, String) {
         if my_ip == GENESIS_NODE {
             my_ip = "192.168.50.13".to_owned();
         }
+
+        println!("data : {:?}", &data);
                 
         if &data.id == &my_ip {
         
