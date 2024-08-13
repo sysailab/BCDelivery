@@ -25,13 +25,13 @@ mod auth;
 async fn main() -> std::io::Result<()> {
     let mut tello_ip = "0.0.0.0".to_owned();
     
-    if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
-        tello_ip = "192.168.50.11".to_owned();
-    }
+    // if local_ip_address::local_ip().unwrap().to_string() == GENESIS_NODE {
+    //     tello_ip = "192.168.50.11".to_owned();
+    // }
 
-    else {
-        tello_ip = local_ip_address::local_ip().unwrap().to_string();
-    }
+    // else {
+    //     tello_ip = local_ip_address::local_ip().unwrap().to_string();
+    // }
 
     //remote::init_tello("drone_id".to_owned(), tello_ip, CMD_PORT, STATE_PORT, VIDEO_PORT).await;
 
@@ -56,7 +56,7 @@ async fn main() -> std::io::Result<()> {
             .route("/get-last-blockchain", web::get().to(get_last_blockchain))
             .route("/get-all-blockchain", web::get().to(get_all_blockchain))
             .route("/broadcast-block", web::post().to(broadcast_block))
-            .route("/add-block", web::post().to(check))
+            .route("/add-block", web::post().to(try_add))
             .route("/broadcast-nodelist", web::post().to(broadcast_nodelist))
             .route("/delete-node", web::post().to(delete_node))
             .route("/get-location", web::get().to(get_location))
@@ -78,7 +78,7 @@ async fn is_valid() -> impl Responder {
     HttpResponse::Ok().json(response)    
 }
 
-async fn check(req_block_data: web::Json<BlockData>) -> impl Responder {
+async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
     p2p::check_chain_valid().await;
     let block_data = req_block_data.clone();
     let check_result: bool = p2p::vote_request(block_data).await;
