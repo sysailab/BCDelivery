@@ -1,6 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
-use remote_server::{get_drone_image, get_drone_loc};
+use remote_server::{get_car_image, get_car_loc, get_drone_image, get_drone_loc};
 use std::io::{self, Cursor, Write};
 use drone::TELLO;
 use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEIP, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
@@ -201,11 +201,26 @@ async fn get_location() -> impl Responder {
     //let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
 
     // let reponse = MYLOCATION.lock().unwrap().clone();
-    let result = get_drone_loc().await;
+    let my_type = NODE_TYPE.lock().unwrap().clone();
+
+    if my_type == "drone" {
+        let result = get_drone_loc().await;
+        HttpResponse::Ok().json(result)
+    }
+
+    else if my_type == "car" {
+        let result = get_car_loc().await;
+        HttpResponse::Ok().json(result)
+    }
+
+    else {
+        HttpResponse::NotFound().json("Not Found")
+    }
+    
 
     // println!("200 : {:?}", reponse);
     
-    HttpResponse::Ok().json(result)
+    
 }
 
 async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
@@ -241,10 +256,23 @@ async fn get_video() -> impl Responder {
     
     let remote_state = REMOTEMODE.lock().unwrap().clone();
     if remote_state {
-        let result = get_drone_image().await;
-        HttpResponse::Ok().json(result)
+        let my_type = NODE_TYPE.lock().unwrap().clone();
+        if my_type == "drone" {
+            let result = get_drone_image().await;
+            HttpResponse::Ok().json(result)
+        }
+
+        else if my_type == "car" {
+            let result = get_car_image().await;
+            HttpResponse::Ok().json(result)
+        }
+
+        else {
+            HttpResponse::NotFound().json("Not Found")
+        }
+        
     }
-    else {
+    else { 
         HttpResponse::BadRequest().json("REMOTE MODE OFF")
     }
 

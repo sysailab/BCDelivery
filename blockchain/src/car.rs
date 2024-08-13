@@ -18,7 +18,7 @@ pub async fn car_send(cmd:String) {
         .timeout(Duration::from_millis(500))
         .build()
         .unwrap();
-    let url = REMOTE_SERVER.clone();
+    let url = format!("{}/robot/control/",REMOTE_SERVER.clone());
     let id = REMOTEIP.lock().unwrap().clone();
     let cmd = cmd;
     let description = String::new();

@@ -79,3 +79,53 @@ pub async fn get_drone_loc() -> Result<String, &'static str> {
         },
     }
 }
+
+pub async fn get_car_image() -> Result<String, &'static str> {
+    let client = Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+        .unwrap();
+    let remote_ip = REMOTEIP.lock().unwrap().clone();
+    let url = format!("{}/robot/video/{}", REMOTE_SERVER, &remote_ip);
+
+    match client.get(&url).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                let content = response.bytes().await.expect("RESPONSE ERROR");
+                Ok(encode(content))
+            }
+
+            else {
+                Err("REPONSE ERROR")
+            }
+        },
+        Err(e) => {
+            Err("REQUEST ERROR")
+        },
+    }
+}
+
+pub async fn get_car_loc() -> Result<String, &'static str> {
+    let client = Client::builder()
+        .timeout(Duration::from_millis(500))
+        .build()
+        .unwrap();
+    let remote_ip = REMOTEIP.lock().unwrap().clone();
+    let url = format!("{}/robot/info/{}", REMOTE_SERVER, remote_ip);
+
+    match client.get(url).send().await {
+        Ok(response) => {
+            if response.status() == StatusCode::OK {
+                let content = response.text().await.expect("RESPONSE ERROR");
+                Ok(content)
+            }
+
+            else {
+                Err("REPONSE ERROR")
+            }
+        },
+        Err(e) => {
+            Err("REQUEST ERROR")
+        },
+    }
+}
