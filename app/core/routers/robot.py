@@ -158,7 +158,7 @@ async def scan(request: Request):
         return Response(content, status_code)
 
 @router.get("/info")
-async def control(request: Request, robot_ip: str):
+async def info(request: Request, robot_ip: str):
     if robot_ip in robots:
         if not robots[robot_ip].is_stream:
             content, status_code = ResponseFormat.err_stream(robot_ip)
