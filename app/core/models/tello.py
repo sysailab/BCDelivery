@@ -43,7 +43,7 @@ class Tello:
         self.cmd_queue, self.cmd_event = queue.Queue(), threading.Event()
         
         
-        self.cmd_max_time_out = 15
+        self.cmd_max_time_out = 5
         self.cmd_max_retry = 2
         
         self.cmd_buffer_size = 1024
