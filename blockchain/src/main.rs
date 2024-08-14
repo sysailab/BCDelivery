@@ -124,6 +124,8 @@ async fn register_node(node_info: web::Json<Node>) -> impl Responder {
     
     if !nodes.iter().any(|n| n.address == node.address) {
         nodes.push(node.clone());
+        print!("Node list updated {:?}", &node);
+
         p2p::broadcast_nodelist(nodes.clone()).await;
         HttpResponse::Ok().json(&*nodes)
     } else {

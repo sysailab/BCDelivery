@@ -24,8 +24,11 @@ pub async fn broadcast_nodelist(nodelist: Vec<config::Node>) {
         .build()
         .unwrap(); 
     let body = nodelist.clone();
+    let my_ip = IPADDR.lock().unwrap().clone();
+    let my_port = PORT.lock().unwrap().clone();
+    let my_addr = format!("{}:{}", my_ip, my_port);
     for node in nodelist {
-        if &node.address != &IPADDR.lock().unwrap().clone() {
+        if &node.address != &my_addr {
             let url = format!("http://{}/broadcast-nodelist", &node.address);
             match client.post(&url).json(&body).send().await {
                 Ok(response) => {
@@ -43,8 +46,8 @@ pub async fn broadcast_nodelist(nodelist: Vec<config::Node>) {
 }
 
 pub async fn check_chain_valid() {
-    let genesis_ip = GENESIS_NODE.clone();
-    let port = GENESIS_PORT.clone();
+    let genesis_ip = GENESIS_NODE;
+    let port = GENESIS_PORT;
 
     let url = format!("http://{}:{}/is-valid", genesis_ip, port);
     let client = Client::builder()
