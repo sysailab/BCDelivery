@@ -1,2 +1,2 @@
-node_type : 
-remote_ip : 
+node_type : drone 
+remote_ip : 192.168.50.11

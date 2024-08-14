@@ -121,9 +121,10 @@ async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
 async fn register_node(node_info: web::Json<Node>) -> impl Responder {
     let node = node_info.into_inner();
     let mut nodes = NODES.lock().unwrap();
-
+    
     if !nodes.iter().any(|n| n.address == node.address) {
         nodes.push(node.clone());
+        p2p::broadcast_nodelist(nodes.clone()).await;
         HttpResponse::Ok().json(&*nodes)
     } else {
         HttpResponse::BadRequest().json(&*nodes)
