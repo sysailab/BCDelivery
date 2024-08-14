@@ -19,6 +19,7 @@ pub static STREAM_CMD: &str = "streamon";
 pub static NAL_UNIT:[u8; 4]= [0, 0, 0, 1];
 pub static BLOCKCHAINPATH : &str = "src/instance/data";
 pub static REMOTE_SERVER: &str = "http://192.168.50.254:17148";
+pub static REMOTE_CONFIG_FILE_PATH: &str = "./remote_config";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockData {
