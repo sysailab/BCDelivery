@@ -20,7 +20,7 @@ p2p.rs는 블록체인 서버가 행동할때 필요한 함수를 보유하고 �
 pub async fn broadcast_nodelist(nodelist: Vec<config::Node>) {
     // 업데이트 된 최신의 Nodelist의 노드들에게 자신이 보유한 nodelist를 전달함
     let client = Client::builder()
-        .timeout(Duration::from_millis(1000))
+        .timeout(Duration::from_millis(2000))
         .build()
         .unwrap(); 
     let body = nodelist.clone();
@@ -48,7 +48,7 @@ pub async fn check_chain_valid() {
 
     let url = format!("http://{}:{}/is-valid", genesis_ip, port);
     let client = Client::builder()
-        .timeout(Duration::from_millis(500))
+        .timeout(Duration::from_millis(2000))
         .build()
         .unwrap();
 
@@ -81,7 +81,7 @@ async fn get_all_blockchain() {
 
     let url = format!("http://{}:{}/get-all-blockchain", genesis_ip, port);
     let client = Client::builder()
-        .timeout(Duration::from_millis(1000))
+        .timeout(Duration::from_millis(2000))
         .build()
         .unwrap();
 
@@ -201,7 +201,7 @@ pub async fn vote_request(block_data: config::BlockData) -> bool {
     let body = &block_data;
     
     let client = Client::builder()
-        .timeout(Duration::from_millis(1000)) // millisecond
+        .timeout(Duration::from_millis(2000)) // millisecond
         .build()
         .unwrap();
 
@@ -256,7 +256,7 @@ pub async fn global_update(block_data: blockchain::Block, ip: String) {
     let body = &block_data;
 
     let client = Client::builder()
-        .timeout(Duration::from_millis(500))
+        .timeout(Duration::from_millis(2000))
         .build()
         .unwrap();
    
@@ -296,7 +296,7 @@ pub async fn change_remote_mode() -> bool {
     let node_info = UpdateNode::new(my_ip, "None".to_owned(), my_type);
 
     let client = Client::builder()
-        .timeout(Duration::from_millis(1000))
+        .timeout(Duration::from_millis(10000))
         .build()
         .unwrap();
 

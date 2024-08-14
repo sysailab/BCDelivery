@@ -1,8 +1,9 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use blockchain::{check_blockchain_exist, Blockchain};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
 use remote_server::{get_car_image, get_car_loc, get_drone_image, get_drone_loc};
 use std::io::{self, Cursor, Write};
-use drone::TELLO;
+use drone::{drone_send_cmd, TELLO};
 use instance::config::{BLOCKLENGTH, CMD_PORT, GENESIS_NODE, NODE_TYPE, REMOTEIP, REMOTEMODE, STATE_PORT, STREAM_CMD, VIDEO_PORT};
 use instance::{config, setup};
 use remote::MYLOCATION;
@@ -101,12 +102,8 @@ async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
         let cmd = req_block_data.command.clone();
         println!("ip {}", &my_ip);
         println!("cmd : {}", &cmd);
-        let block = blockchain::Data::new(req_block_data.id.clone(), cmd, req_block_data.state.clone());
 
-        // DEBUG
-        println!("Block : {:?}", &block);
-
-        let new_block = blockchain.add_block(block);      
+        let new_block = blockchain.check_data_exist(req_block_data.id.clone(), cmd, req_block_data.state.clone());        
 
         // DEBUG
         println!("block data : {:?}", &new_block);
@@ -187,9 +184,9 @@ async fn delete_node(node_info : web::Json<UpdateNode>) -> impl Responder {
 
     node_list.retain(|node| node.address != node_info.delete_ip);
 
-    let new_node = Node::new(node_info.update_ip, node_info.node_type);
+    // let new_node = Node::new(node_info.update_ip, node_info.node_type);
     
-    node_list.push(new_node);
+    // node_list.push(new_node);
 
     p2p::broadcast_nodelist(node_list.clone()).await;
 
@@ -225,8 +222,10 @@ async fn get_location() -> impl Responder {
 
 async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
     let req_data = request.into_inner();
+    println!("{:?}", req_data.clone());
 
     let check_result = p2p::vote_request(req_data.clone()).await;
+    println!("Vote Result : {}", &check_result);
     
     if check_result {
         let mut blockchain = BLOCKCHAIN.lock().unwrap();
@@ -238,16 +237,24 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
         let change_result = p2p::change_remote_mode().await;
 
         if change_result {
-            HttpResponse::Ok().json("REMOTE DONE")
+            let response_message = Result::new(true);
+
+            let my_type = NODE_TYPE.lock().unwrap().clone();
+            if my_type == "drone" {
+                drone_send_cmd("streamon".to_string()).await;
+            }
+            HttpResponse::Ok().json(response_message)
         }
 
         else {
-            HttpResponse::BadRequest().json("REMOTE FAILED")
+            let response_message = Result::new(false);
+            HttpResponse::BadRequest().json(response_message)
         }
     }
 
     else {
-        HttpResponse::Unauthorized().json("Not Allowed")
+        let response_message = Result::new(false);
+        HttpResponse::Unauthorized().json(response_message)
     }   
 }
 
@@ -256,18 +263,24 @@ async fn get_video() -> impl Responder {
     
     let remote_state = REMOTEMODE.lock().unwrap().clone();
     if remote_state {
+        
         let my_type = NODE_TYPE.lock().unwrap().clone();
         if my_type == "drone" {
+            
+
             let result = get_drone_image().await;
+            println!("Video : {:?}", &result);
             HttpResponse::Ok().json(result)
         }
 
         else if my_type == "car" {
             let result = get_car_image().await;
+            println!("Video : {:?}", &result);
             HttpResponse::Ok().json(result)
         }
 
         else {
+            println!("Failed");
             HttpResponse::NotFound().json("Not Found")
         }
         

@@ -115,14 +115,14 @@ pub fn check(init_state: String) -> (bool, String, String, String) {
                     }
 
                     let result = true;
-                    println!("@@@@@@ {} {} {}", &result, &cur_state, & my_node_type);
+                    //println!("@@@@@@ {} {} {}", &result, &cur_state, & my_node_type);
 
                     return (result, cur_state, cmd, my_node_type)
                 }
             }
         }
         else {
-            println!("Else Debug Log {}:{}", &my_ip, &data.id);
+            // println!("Else Debug Log my ip:{} data ip : {}", &my_ip, &data.id);
         }
     }
 

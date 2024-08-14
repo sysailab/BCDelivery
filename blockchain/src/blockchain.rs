@@ -4,7 +4,7 @@ use std::{fs::File, time::{SystemTime, UNIX_EPOCH}};
 use std::io::prelude::*;
 use sha2::{Sha256, Digest};
 
-use crate::instance::config::{self, BLOCKCHAINPATH, BLOCKLENGTH, DIFFICULTY};
+use crate::instance::config::{self, BlockData, BLOCKCHAINPATH, BLOCKLENGTH, DIFFICULTY};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -87,7 +87,7 @@ impl Blockchain {
 
         let mut genesis_data = Vec::new();
 
-        let data = Data {
+        let mut data = Data {
             id : "Genesis".to_owned(),
             command : "Genesis".to_owned(),
             state : "Genesis".to_owned()
@@ -146,6 +146,39 @@ impl Blockchain {
     pub fn get_last_block(&self) -> &Block {
         self.blocks.last().unwrap()
     }
+
+    pub fn check_data_exist(&mut self, id: String, cmd: String, state: String) -> Block {
+        let last_block = self.blocks.last().unwrap().clone();
+        let mut _exist_flag = false;
+
+        for data in last_block.data.iter() {
+            if &data.id == &id {
+                let new_block = self.update_my_data(id.clone(), cmd.clone(), state.clone());
+                _exist_flag = true;
+
+                return new_block; 
+            }
+        }
+
+        let data = Data::new(id.clone(), cmd.clone(), state.clone());
+        let new_block = self.add_block(data);
+
+        return new_block;
+    }
+
+    fn update_my_data(&mut self, id:String, cmd: String, state: String) -> Block {
+        let last_block = self.blocks.last_mut().unwrap();
+        for data in &mut last_block.data {
+            if data.id == id.clone() {
+                if data.command != cmd.clone() {
+                    data.command = cmd.clone();
+                    data.state = state.clone();
+                }
+            }
+        }
+        return self.blocks.last().unwrap().clone();
+    }
+
 
     // pub fn add_new_transaction(&mut self, tra)
 
