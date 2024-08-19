@@ -295,8 +295,9 @@ pub async fn global_update(block_data: blockchain::Block, ip: String) {
 pub async fn change_remote_mode() -> bool {
     let my_ip = IPADDR.lock().unwrap().clone();
     let my_type = NODE_TYPE.lock().unwrap().clone();
+    let my_port = PORT.lock().unwrap().clone();
 
-    let node_info = UpdateNode::new(my_ip, "None".to_owned(), my_type);
+    let node_info = UpdateNode::new(format!("{}:{}",my_ip, my_port), "None".to_owned(), my_type);
 
     let client = Client::builder()
         .timeout(Duration::from_millis(10000))

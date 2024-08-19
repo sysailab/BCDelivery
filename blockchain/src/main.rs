@@ -232,8 +232,7 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
     
     if check_result {
         let mut blockchain = BLOCKCHAIN.lock().unwrap();
-        let block = blockchain::Data::new(req_data.id.clone(), req_data.command.clone(), req_data.command.clone());
-        let new_block = blockchain.add_block(block);
+        let new_block = blockchain.check_data_exist(req_data.id.clone(), req_data.command.clone(), req_data.state.clone());  
 
         p2p::global_update(new_block, IPADDR.lock().unwrap().clone()).await;
 
