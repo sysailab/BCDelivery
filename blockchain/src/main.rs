@@ -1,5 +1,5 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use blockchain::{check_blockchain_exist, Blockchain};
+use blockchain::{check_blockchain_exist, Block, Blockchain, Data};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
 use remote_server::{get_car_image, get_car_loc, get_drone_image, get_drone_loc};
 use std::io::{self, Cursor, Write};
@@ -92,19 +92,22 @@ async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
     if check_result {
         // DEBUG
         println!("Ready for Broadcast");
-
-        let mut blockchain = BLOCKCHAIN.lock().unwrap();
+        let mut new_block = Block::new(0, Vec::new() , String::new());
+        let mut my_ip = String::new();
+        {
+            let mut blockchain = BLOCKCHAIN.lock().unwrap();
         
-        // DEBUG
-        println!("Current Data : {:?}", &blockchain.blocks);
+            // DEBUG
+            println!("Current Data : {:?}", &blockchain.blocks);
 
-        let my_ip = IPADDR.lock().unwrap().clone();
-        let cmd = req_block_data.command.clone();
-        println!("ip {}", &my_ip);
-        println!("cmd : {}", &cmd);
+            my_ip = IPADDR.lock().unwrap().clone();
+            let cmd = req_block_data.command.clone();
+            println!("ip {}", &my_ip);
+            println!("cmd : {}", &cmd);
 
-        let new_block = blockchain.check_data_exist(req_block_data.id.clone(), cmd, req_block_data.state.clone());        
-
+            new_block = blockchain.check_data_exist(req_block_data.id.clone(), cmd, req_block_data.state.clone());        
+        }
+        
         // DEBUG
         println!("block data : {:?}", &new_block);
 
@@ -120,7 +123,10 @@ async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
 
 async fn register_node(node_info: web::Json<Node>) -> impl Responder {
     let node = node_info.into_inner();
-    let mut nodes = NODES.lock().unwrap();
+    let mut nodes = Vec::new();
+    {
+        nodes = NODES.lock().unwrap().clone();
+    }
     
     if !nodes.iter().any(|n| n.address == node.address) {
         nodes.push(node.clone());
@@ -183,7 +189,11 @@ async fn broadcast_nodelist(node_list: web::Json<Vec<Node>>) -> impl Responder {
 async fn delete_node(node_info : web::Json<UpdateNode>) -> impl Responder {
     let node_info = node_info.into_inner();
 
-    let mut node_list = NODES.lock().unwrap();
+    let mut node_list = Vec::new();
+
+    {
+        node_list = NODES.lock().unwrap().clone();
+    }
 
     node_list.retain(|node| node.address != node_info.delete_ip);
 
@@ -201,7 +211,11 @@ async fn get_location() -> impl Responder {
     //let (mut x, mut y, mut z) = ("00.00".to_owned(), "00.00".to_owned(), "00.00".to_owned());
 
     // let reponse = MYLOCATION.lock().unwrap().clone();
-    let my_type = NODE_TYPE.lock().unwrap().clone();
+    let mut my_type = String::new();
+
+    {
+        my_type = NODE_TYPE.lock().unwrap().clone();
+    }
 
     if my_type == "drone" {
         let result = get_drone_loc().await;
@@ -231,9 +245,11 @@ async fn change_remote_mode(request : web::Json<BlockData>) -> impl Responder {
     println!("Vote Result : {}", &check_result);
     
     if check_result {
-        let mut blockchain = BLOCKCHAIN.lock().unwrap();
-        let new_block = blockchain.check_data_exist(req_data.id.clone(), req_data.command.clone(), req_data.state.clone());  
-
+        let mut new_block = Block::new(0, Vec::new(), String::new());
+        {
+            let mut blockchain = BLOCKCHAIN.lock().unwrap();
+            new_block = blockchain.check_data_exist(req_data.id.clone(), req_data.command.clone(), req_data.state.clone());  
+        }
         p2p::global_update(new_block, IPADDR.lock().unwrap().clone()).await;
 
         let change_result = p2p::change_remote_mode().await;
