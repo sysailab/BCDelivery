@@ -5,7 +5,7 @@ use base64::{encode};
 
 use crate::instance::config::{RemoteServerReq, REMOTEIP, REMOTE_SERVER};
 
-pub async fn get_drone_image() -> Result<Vec<u8>, &'static str> {
+pub async fn get_drone_image() -> Result<String, &'static str> {
     let client = Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -17,33 +17,39 @@ pub async fn get_drone_image() -> Result<Vec<u8>, &'static str> {
         Ok(response) => {
             if response.status() == StatusCode::OK {
                 let content = response.bytes().await.expect("RESPONSE ERROR");
-                Ok(content.to_vec())
+                Ok(encode(content))
             }
+
             else if response.status() == StatusCode::ACCEPTED {
                 let post_url = format!("{}/drone/control/", REMOTE_SERVER);
                 let body = RemoteServerReq::new(remote_ip, "stramon".to_string(), "".to_string());
                 match client.post(post_url).json(&body).send().await {
-                    Ok(_) => match client.get(&url).send().await {
-                        Ok(response) => {
-                            if response.status() == StatusCode::OK {
-                                let content = response.bytes().await.expect("RESPONSE ERROR");
-                                Ok(content.to_vec())
-                            } else {
-                                Err("STREAM NOT RUNNING")
-                            }
-                        },
-                        Err(_) => {
-                            Err("Server Not RUNNING")
-                        },
+                    Ok(response) => {
+                        match client.get(&url).send().await {
+                            Ok(response) => {
+                                if response.status() == StatusCode::OK {
+                                    let content = response.bytes().await.expect("RESPONSE ERROR");
+                                    Ok(encode(content))
+                                }
+
+                                else {
+                                    Err("STREAM NOT RUNNING")
+                                }
+                            },
+                            Err(_) => {
+                                Err("Server Not RUNNING")
+                            },
+                        }
                     },
                     Err(_) => todo!(),
                 }
             }
+
             else {
-                Err("RESPONSE ERROR")
+                Err("REPONSE ERROR")
             }
         },
-        Err(_) => {
+        Err(e) => {
             Err("REQUEST ERROR")
         },
     }
