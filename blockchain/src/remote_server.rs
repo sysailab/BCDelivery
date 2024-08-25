@@ -1,11 +1,12 @@
 use actix_web::web::{Bytes, Json};
 use reqwest::{Client, StatusCode};
+use rsa::pkcs8::der::Encodable;
 use std::time::Duration;
 use base64::{encode};
 
 use crate::instance::config::{RemoteServerReq, REMOTEIP, REMOTE_SERVER};
 
-pub async fn get_drone_image() -> String {
+pub async fn get_drone_image() -> Vec<u8> {
     let client = Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -17,7 +18,7 @@ pub async fn get_drone_image() -> String {
         Ok(response) => {
             if response.status() == StatusCode::OK {
                 let content = response.bytes().await.expect("RESPONSE ERROR");
-                encode(content)
+                content.to_vec()
             }
 
             else if response.status() == StatusCode::ACCEPTED {
@@ -29,18 +30,18 @@ pub async fn get_drone_image() -> String {
                             Ok(response) => {
                                 if response.status() == StatusCode::OK {
                                     let content = response.bytes().await.expect("RESPONSE ERROR");
-                                    encode(content)
+                                    content.to_vec()
                                     // Ok(encode(content))
                                 }
 
                                 else {
                                     println!("STREAM NOT RUNNING");
-                                    "".to_string()
+                                    Vec::new()
                                 }
                             },
                             Err(_) => {
                                 println!("Server Not RUNNING");
-                                "".to_string()
+                                Vec::new()
                             },
                         }
                     },
@@ -50,12 +51,12 @@ pub async fn get_drone_image() -> String {
 
             else {
                 println!("REPONSE ERROR");
-                "".to_string()
+                Vec::new()
             }
         },
         Err(e) => {
             println!("REQUEST ERROR");
-            "".to_string()
+            Vec::new()
         },
     }
 }
