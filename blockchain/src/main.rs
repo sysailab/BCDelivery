@@ -123,10 +123,9 @@ async fn try_add(req_block_data: web::Json<BlockData>) -> impl Responder {
 
 async fn register_node(node_info: web::Json<Node>) -> impl Responder {
     let node = node_info.into_inner();
-    let mut nodes = Vec::new();
-    {
-        nodes = NODES.lock().unwrap().clone();
-    }
+    
+    let mut nodes = NODES.lock().unwrap();
+    
     
     if !nodes.iter().any(|n| n.address == node.address) {
         nodes.push(node.clone());
