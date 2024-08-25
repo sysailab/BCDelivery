@@ -5,7 +5,7 @@ use base64::{encode};
 
 use crate::instance::config::{RemoteServerReq, REMOTEIP, REMOTE_SERVER};
 
-pub async fn get_drone_image() -> Result<String, &'static str> {
+pub async fn get_drone_image() -> String {
     let client = Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -17,7 +17,7 @@ pub async fn get_drone_image() -> Result<String, &'static str> {
         Ok(response) => {
             if response.status() == StatusCode::OK {
                 let content = response.bytes().await.expect("RESPONSE ERROR");
-                Ok(encode(content))
+                encode(content)
             }
 
             else if response.status() == StatusCode::ACCEPTED {
@@ -29,15 +29,18 @@ pub async fn get_drone_image() -> Result<String, &'static str> {
                             Ok(response) => {
                                 if response.status() == StatusCode::OK {
                                     let content = response.bytes().await.expect("RESPONSE ERROR");
-                                    Ok(encode(content))
+                                    encode(content)
+                                    // Ok(encode(content))
                                 }
 
                                 else {
-                                    Err("STREAM NOT RUNNING")
+                                    println!("STREAM NOT RUNNING");
+                                    "".to_string()
                                 }
                             },
                             Err(_) => {
-                                Err("Server Not RUNNING")
+                                println!("Server Not RUNNING");
+                                "".to_string()
                             },
                         }
                     },
@@ -46,11 +49,13 @@ pub async fn get_drone_image() -> Result<String, &'static str> {
             }
 
             else {
-                Err("REPONSE ERROR")
+                println!("REPONSE ERROR");
+                "".to_string()
             }
         },
         Err(e) => {
-            Err("REQUEST ERROR")
+            println!("REQUEST ERROR");
+            "".to_string()
         },
     }
 }
