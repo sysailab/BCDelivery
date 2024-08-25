@@ -6,7 +6,7 @@ use base64::{encode};
 
 use crate::instance::config::{RemoteServerReq, REMOTEIP, REMOTE_SERVER};
 
-pub async fn get_drone_image() -> Vec<u8> {
+pub async fn get_drone_image() -> String {
     let client = Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -17,8 +17,8 @@ pub async fn get_drone_image() -> Vec<u8> {
     match client.get(&url).send().await {
         Ok(response) => {
             if response.status() == StatusCode::OK {
-                let content = response.bytes().await.expect("RESPONSE ERROR");
-                content.to_vec()
+                let content = response.text().await.expect("RESPONSE ERROR");
+                content
             }
 
             else if response.status() == StatusCode::ACCEPTED {
@@ -29,19 +29,19 @@ pub async fn get_drone_image() -> Vec<u8> {
                         match client.get(&url).send().await {
                             Ok(response) => {
                                 if response.status() == StatusCode::OK {
-                                    let content = response.bytes().await.expect("RESPONSE ERROR");
-                                    content.to_vec()
+                                    let content = response.text().await.expect("RESPONSE ERROR");
+                                    content
                                     // Ok(encode(content))
                                 }
 
                                 else {
                                     println!("STREAM NOT RUNNING");
-                                    Vec::new()
+                                    "".to_string()
                                 }
                             },
                             Err(_) => {
                                 println!("Server Not RUNNING");
-                                Vec::new()
+                                "".to_string()
                             },
                         }
                     },
@@ -51,12 +51,12 @@ pub async fn get_drone_image() -> Vec<u8> {
 
             else {
                 println!("REPONSE ERROR");
-                Vec::new()
+                "".to_string()
             }
         },
         Err(e) => {
             println!("REQUEST ERROR");
-            Vec::new()
+            "".to_string()
         },
     }
 }
