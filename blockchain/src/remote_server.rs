@@ -55,7 +55,7 @@ pub async fn get_drone_loc() -> Result<String, &'static str> {
     }
 }
 
-pub async fn get_car_image() -> Result<String, &'static str> {
+pub async fn get_car_image() -> Bytes {
     let client = Client::builder()
         .timeout(Duration::from_millis(500))
         .build()
@@ -66,16 +66,16 @@ pub async fn get_car_image() -> Result<String, &'static str> {
     match client.get(&url).send().await {
         Ok(response) => {
             if response.status() == StatusCode::OK {
-                let content = response.bytes().await.expect("RESPONSE ERROR");
-                Ok(encode(content))
+                response.bytes().await.expect("RESPONSE ERROR")
             }
-
             else {
-                Err("REPONSE ERROR")
+                println!("RESPONSE ERROR OR STREAM NOT RUNNING");
+                Bytes::new() // Return an empty Bytes object in case of error
             }
         },
         Err(e) => {
-            Err("REQUEST ERROR")
+            println!("REQUEST ERROR: {}", e);
+            Bytes::new() // Return an empty Bytes object in case of error
         },
     }
 }

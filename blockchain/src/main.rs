@@ -305,7 +305,9 @@ async fn get_video() -> impl Responder {
         else if my_type == "car" {
             let result = get_car_image().await;
             println!("Video : {:?}", &result);
-            HttpResponse::Ok().json(result)
+            HttpResponse::Ok()
+                .content_type("application/octet-stream")
+                .body(result)
         }
 
         else {
@@ -317,29 +319,4 @@ async fn get_video() -> impl Responder {
     else { 
         HttpResponse::BadRequest().json("REMOTE MODE OFF")
     }
-
-    //     let tello_option = TELLO.lock().await;
-    //     if let Some(tello) = &*tello_option {
-    //         let video_buffer_lock = tello.get_latest_video_buf().await;
-    //         if let Some(video_buffer) = video_buffer_lock {
-    //             match decode_h264_to_jpeg(&video_buffer) {
-    //                 Ok(img_buf) => {
-    //                     let mut buf = Cursor::new(Vec::new());
-    //                     buf.write_all(&img_buf).unwrap();
-    //                     HttpResponse::Ok().content_type("image/jpeg").body(buf.into_inner())
-    //                 },
-    //                 Err(e) => {
-    //                     println!("Decoding failed: {}", e);
-    //                     HttpResponse::InternalServerError().json("Decoding failed")
-    //                 }
-    //             }
-    //         } else {
-    //             HttpResponse::NotFound().json("No video frame available")
-    //         }
-    //     } else {
-    //         HttpResponse::NotFound().json("Tello drone is not initialized")
-    //     }
-    // } else {
-    //     HttpResponse::NotFound().json("Node is not in REMOTE MODE")
-    // }
 }
