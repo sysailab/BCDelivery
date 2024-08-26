@@ -33,6 +33,7 @@ ip_dict = None
 def robot_scan():
     global ip_dict
     while True:
+        print(" * Robot Scanning... " + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
         ip_dict = conn.scan_robot_ip_list(timeout=5)
         time.sleep(10)
 

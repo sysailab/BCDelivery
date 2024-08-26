@@ -40,7 +40,7 @@ def control(request: Request, drone_control: Control):
         
     if drone_control.ip in drones:
 
-        # drones[drone_control.ip].command(DRONE_COMMAND)
+        drones[drone_control.ip].command(DRONE_COMMAND)
         drones[drone_control.ip].command(drone_control.cmd)
         
         drone_rep = drones[drone_control.ip].drone_rep_queue.get()
@@ -62,7 +62,7 @@ def control(request: Request, drone_control: Control):
             command, status_code = ResponseFormat.err_found(drone_control.ip)
             return Response(command, status_code)
         
-        # drones[drone_control.ip].command(DRONE_COMMAND)
+        drones[drone_control.ip].command(DRONE_COMMAND)
         drones[drone_control.ip].command(drone_control.cmd)
         
         drone_rep = drones[drone_control.ip].drone_rep_queue.get()
