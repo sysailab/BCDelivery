@@ -52,7 +52,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         let cors = Cors::default()
-            .allowed_origin("*")
+            .allowed_origin_fn(|origin, _req_head| {
+                true
+            })
             .allowed_methods(vec!["GET", "POST", "OPTIONS"])
             .allow_any_header()
             .max_age(3600);
