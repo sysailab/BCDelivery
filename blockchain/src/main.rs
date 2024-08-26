@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, body};
 use blockchain::{check_blockchain_exist, Block, Blockchain, Data};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
 use remote_server::{get_car_image, get_car_loc, get_drone_image, get_drone_loc};
@@ -287,7 +287,9 @@ async fn get_video() -> impl Responder {
 
             let result = get_drone_image().await;
             println!("Video : {:?}", &result);
-            HttpResponse::Ok().json(result)
+            HttpResponse::Ok()
+                .content_type("application/octet-stream")
+                .body(result)
         }
 
         else if my_type == "car" {
