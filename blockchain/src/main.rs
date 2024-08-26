@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder, body};
 use blockchain::{check_blockchain_exist, Block, Blockchain, Data};
 use image::{ImageOutputFormat, ImageBuffer, RgbImage};
@@ -50,7 +51,14 @@ async fn main() -> std::io::Result<()> {
     tokio::spawn(monitoring::cmd_monitoring());
 
     HttpServer::new(|| {
+        let cors = Cors::default()
+            .supports_credentials()
+            .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+            .allow_any_header()
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .route("/register-node", web::post().to(register_node))
             .route("/get-nodes", web::get().to(get_nodes))
             .route("/consensus", web::post().to(consensus))
