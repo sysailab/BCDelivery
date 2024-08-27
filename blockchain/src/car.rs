@@ -15,7 +15,7 @@ use crate::remote::MYLOCATION;
 
 pub async fn car_send(cmd:String) {
     let client = Client::builder()
-        .timeout(Duration::from_millis(500))
+        .timeout(Duration::from_millis(15000))
         .build()
         .unwrap();
     let url = format!("{}/robot/control/",REMOTE_SERVER.clone());
