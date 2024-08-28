@@ -93,7 +93,21 @@ impl Blockchain {
             state : "Genesis".to_owned()
         };
 
+        let car1_data = Data {
+            id : "192.168.50.207".to_owned(),
+            command : "s".to_owned(),
+            state : "STAY".to_owned()
+        };
+
+        let drone1_data = Data {
+            id : "192.168.50.33".to_owned(),
+            command : "land".to_owned(),
+            state : "STAY".to_owned()
+        };
+
         genesis_data.push(data);
+        genesis_data.push(car1_data);
+        genesis_data.push(drone1_data);
 
         let genesis_block = Block::new(0, genesis_data, "0".to_string());
         blockchain.blocks.push(genesis_block);
