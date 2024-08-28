@@ -127,16 +127,16 @@ class Tello:
             #     self._video_frame = None
             
     def thread_start(self):
-        print(f" @ {self.drone_id} : Receiver Thread start.")
+        print(f" @ {self.drone_ip} : Receiver Thread start.")
         threading.Thread(target=self.receiver, daemon=True).start()
         
-        print(f" @ {self.drone_id} : Sender Thread start.")
+        print(f" @ {self.drone_ip} : Sender Thread start.")
         threading.Thread(target=self.sender, daemon=True).start()
         
-        print(f" @ {self.drone_id} : Update State Thread start.")
+        print(f" @ {self.drone_ip} : Update State Thread start.")
         threading.Thread(target=self.update_state , daemon=True).start()
         
-        print(f" @ {self.drone_id} : Video Stream Thread start.")
+        print(f" @ {self.drone_ip} : Video Stream Thread start.")
         threading.Thread(target=self.video_stream , daemon=True).start()
         
         

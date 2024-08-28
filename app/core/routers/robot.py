@@ -37,7 +37,7 @@ def robot_scan():
         ip_dict = conn.scan_robot_ip_list(timeout=5)
         time.sleep(10)
 
-threading.Thread(target=robot_scan, daemon=True).start()
+# threading.Thread(target=robot_scan, daemon=True).start()
 
 # async def robot_scan():
 #     global ip_dict
@@ -49,6 +49,8 @@ threading.Thread(target=robot_scan, daemon=True).start()
 
 @router.post("/control/")
 async def control(request: Request, robot_control: Control):
+    print("### [ROBOT] : " + str(robot_control))
+    
     
     if robot_control.ip in robots:
         await robots[robot_control.ip].command(robot_control.cmd)
@@ -99,7 +101,7 @@ async def control(request: Request, robot_control: Control):
               
 @router.get("/control")
 async def control_ip(request: Request, robot_ip:str, cmd:str):
-
+    
     if robot_ip in robots:
         await robots[robot_ip].command(cmd)
         
@@ -262,7 +264,15 @@ def robot_initialize(_robot_ip) -> RoboEP:
     
     # robot_sn = robot_ip_table[_robot_sn]["sn"]
     try:
-        robots[_robot_ip] = RoboEP(ip_dict[_robot_ip])        
+        # robots[_robot_ip] = RoboEP(ip_dict[_robot_ip])     
+        
+        if _robot_ip == "192.168.50.39":
+            sn = "3JKCK980030EKR"
+        elif _robot_ip == "192.168.50.31":
+            sn = "imsi"
+           
+        robots[_robot_ip] = RoboEP(sn)        
+        # 3JKCK980030EKR
         return True
     
     except Exception as e:

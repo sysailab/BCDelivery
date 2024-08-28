@@ -10,7 +10,7 @@ import queue
 import io
 from starlette.responses import StreamingResponse
 from .drone_command import *
-
+import socket
 
 router = APIRouter()
 
@@ -24,6 +24,17 @@ drones = {}
 
 ip_table_dict = open("app/core/routers/drone_ip_table.json", 'r')
 ip_table_dict = json.load(ip_table_dict)    
+
+
+# cmd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# cmd_socket.bind(('0.0.0.0', 8889))
+# state_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# state_socket.bind(('0.0.0.0', 8890))
+
+
+
+
+
     
 @router.post("/control/")
 def control(request: Request, drone_control: Control):
@@ -38,6 +49,8 @@ def control(request: Request, drone_control: Control):
         _type_: _description_
     """
         
+    print("### [DRONE] : " + str(drone_control))
+    
     if drone_control.ip in drones:
 
         drones[drone_control.ip].command(DRONE_COMMAND)
@@ -194,9 +207,10 @@ def drone_initialize(_drone_ip) -> Tello:
     # drone_state_port = ip_table_dict[_drone_id]["ports"]["state"]
     # drone_video_port = ip_table_dict[_drone_id]["ports"]["video"]
     
-        drones[_drone_ip] = Tello("imsi", _drone_ip, \
+        drones[_drone_ip] = Tello(_drone_ip, _drone_ip, \
                     8889, 8890, 11111)
         return True
     except Exception as e:
+        print(e)
         return False
     

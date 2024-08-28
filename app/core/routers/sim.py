@@ -33,7 +33,7 @@ def control(request: Request, state_request: List[StateRequest]):
         
     state_response = sim_recv_queue.get()
     # print("From Simulator : ", text)
-    # print(state_response)
+    print("### [SIM] : " + str(state_response))
     
     return state_response
     
