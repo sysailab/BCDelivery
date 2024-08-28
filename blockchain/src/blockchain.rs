@@ -1,9 +1,10 @@
 // blockchain.rs
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{fs::File, time::{SystemTime, UNIX_EPOCH}};
+use std::io::prelude::*;
 use sha2::{Sha256, Digest};
 
-use crate::instance::config;
+use crate::instance::config::{self, BlockData, BLOCKCHAINPATH, BLOCKLENGTH, DIFFICULTY};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -18,7 +19,18 @@ pub struct Block {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Data {
     pub id: String,
-    pub command: String
+    pub command: String,
+    pub state: String
+}
+
+impl Data {
+    pub fn new(id: String, command: String, state: String) -> Self {
+        Data {
+            id,
+            command,
+            state
+        }
+    }
 }
 
 impl Block {
@@ -60,6 +72,7 @@ impl Block {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Blockchain {
     pub blocks: Vec<Block>,
     pub difficulty: usize,
@@ -69,17 +82,32 @@ impl Blockchain {
     pub fn new() -> Self {
         let mut blockchain = Blockchain {
             blocks: Vec::new(),
-            difficulty: config::DIFFICULTY,
+            difficulty: DIFFICULTY,
         };
 
         let mut genesis_data = Vec::new();
 
-        let data = Data {
+        let mut data = Data {
             id : "Genesis".to_owned(),
-            command : "Genesis".to_owned()
+            command : "Genesis".to_owned(),
+            state : "Genesis".to_owned()
+        };
+
+        let car1_data = Data {
+            id : "192.168.50.207".to_owned(),
+            command : "s".to_owned(),
+            state : "STAY".to_owned()
+        };
+
+        let drone1_data = Data {
+            id : "192.168.50.33".to_owned(),
+            command : "land".to_owned(),
+            state : "STAY".to_owned()
         };
 
         genesis_data.push(data);
+        genesis_data.push(car1_data);
+        genesis_data.push(drone1_data);
 
         let genesis_block = Block::new(0, genesis_data, "0".to_string());
         blockchain.blocks.push(genesis_block);
@@ -95,11 +123,21 @@ impl Blockchain {
         new_block.mine_block(self.difficulty);
         self.blocks.push(new_block.clone());
 
+        self.update_block_length();
+
         return new_block.clone();
     }
 
     pub fn update_block(&mut self, block: Block) {
         self.blocks.push(block);
+        self.update_block_length();
+    }
+
+    pub fn update_block_length(&mut self) {
+        let mut block_length_lock = BLOCKLENGTH.lock().unwrap();
+        let block_len = self.blocks.len();
+
+        *block_length_lock = block_len.to_string();
     }
 
     pub fn is_valid(&self, block: &Block) -> bool {
@@ -123,8 +161,60 @@ impl Blockchain {
         self.blocks.last().unwrap()
     }
 
+    pub fn check_data_exist(&mut self, id: String, cmd: String, state: String) -> Block {
+        let last_block = self.blocks.last().unwrap().clone();
+        let mut _exist_flag = false;
+
+        for data in last_block.data.iter() {
+            if &data.id == &id {
+                let new_block = self.update_my_data(id.clone(), cmd.clone(), state.clone());
+                _exist_flag = true;
+
+                return new_block; 
+            }
+        }
+
+        let data = Data::new(id.clone(), cmd.clone(), state.clone());
+        let new_block = self.add_block(data);
+
+        return new_block;
+    }
+
+    fn update_my_data(&mut self, id:String, cmd: String, state: String) -> Block {
+        let last_block = self.blocks.last_mut().unwrap();
+        for data in &mut last_block.data {
+            if data.id == id.clone() {
+                if data.command != cmd.clone() {
+                    data.command = cmd.clone();
+                    data.state = state.clone();
+                }
+            }
+        }
+        return self.blocks.last().unwrap().clone();
+    }
+
+
     // pub fn add_new_transaction(&mut self, tra)
 
 
     
+}
+
+pub fn check_blockchain_exist() {
+    let mut file = File::create(BLOCKCHAINPATH).expect("FILE CREATE ERROR");
+    
+    let genesis_blockchain = Blockchain::new();
+    let data = serde_json::to_string(&genesis_blockchain).expect("JSON ERROR");
+
+    file.write_all(data.as_bytes()).expect("FILE WRITE ERROR");
+}
+
+pub fn get_local_blockchain() -> Blockchain {
+    let mut file = File::open(BLOCKCHAINPATH).expect("FILE NOT EXIST");
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents).expect("FILE READ ERROR");
+    let local_blockchain: Blockchain = serde_json::from_str(&contents).expect("DATA ERROR");
+
+    local_blockchain
 }
