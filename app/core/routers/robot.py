@@ -32,10 +32,11 @@ ip_dict = None
 
 def robot_scan():
     global ip_dict
-    while True:
-        print(" * Robot Scanning... " + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
-        ip_dict = conn.scan_robot_ip_list(timeout=5)
-        time.sleep(10)
+    # while True:
+    print(" * Robot Scanning... " + datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
+    ip_dict = conn.scan_robot_ip_list(timeout=1)
+    # ip_dict = conn.scan_robot_ip_list()
+        # time.sleep(10)
 
 # threading.Thread(target=robot_scan, daemon=True).start()
 
@@ -151,7 +152,7 @@ async def control_ip(request: Request, robot_ip:str, cmd:str):
       
 @router.get("/scan/")
 async def scan(request: Request):
-    
+    robot_scan()
     if ip_dict:
         content, status_code = ResponseFormat.ok_scan(ip_dict)
         return Response(content, status_code)
@@ -160,31 +161,62 @@ async def scan(request: Request):
         content, status_code = ResponseFormat.err_no_data(ip_dict)
         return Response(content, status_code)
 
+# @router.get("/info")
+# async def info(request: Request, robot_ip: str):
+#     if robot_ip in robots:
+#         if not robots[robot_ip].is_stream:
+#             content, status_code = ResponseFormat.err_stream(robot_ip)
+#             return Response(content, status_code)            
+        
+#         else:
+#             try:
+#                 # image_data = robots[robot_sn].video_queue.get()
+#                 image_data = base64.b64encode(robots[robot_ip].video_queue.get())
+#                 # decode_data = base64.b64encode(image_data)
+#                 # print(image_data)
+#             except:
+#                 content, status_code = ResponseFormat.err_no_data(robot_ip)
+#                 return Response(content, status_code)                 
+            
+#             content, status_code = ResponseFormat.ok_info(id= robot_ip, time= datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),\
+#                 imageData= image_data, distance= robots[robot_ip].distance)
+            
+#             return Response(content, status_code)
+            
+#     else:
+#         content, status_code = ResponseFormat.err_found(robot_ip)
+#         return Response(content, status_code)
+
 @router.get("/info")
 async def info(request: Request, robot_ip: str):
-    if robot_ip in robots:
-        if not robots[robot_ip].is_stream:
-            content, status_code = ResponseFormat.err_stream(robot_ip)
-            return Response(content, status_code)            
+    if robot_ip in robots:        
+        content, status_code = ResponseFormat.ok_info(id= robot_ip,\
+            hit= robots[robot_ip].hit, distance= robots[robot_ip].distance)
         
-        else:
-            try:
-                # image_data = robots[robot_sn].video_queue.get()
-                image_data = base64.b64encode(robots[robot_ip].video_queue.get())
-                # decode_data = base64.b64encode(image_data)
-                # print(image_data)
-            except:
-                content, status_code = ResponseFormat.err_no_data(robot_ip)
-                return Response(content, status_code)                 
-            
-            content, status_code = ResponseFormat.ok_info(id= robot_ip, time= datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),\
-                imageData= image_data, distance= robots[robot_ip].distance)
-            
-            return Response(content, status_code)
+        return Response(content, status_code)
             
     else:
-        content, status_code = ResponseFormat.err_found(robot_ip)
-        return Response(content, status_code)
+        if not robot_initialize(robot_ip):
+            content, status_code = ResponseFormat.err_found(robot_ip)
+            return Response(content, status_code)          
+        
+        
+        await robots[robot_ip].initialize()
+                
+        if await robots[robot_ip].rep_queue.get() == 1:
+            robot_destroy(robot_ip)
+            content, status_code = ResponseFormat.err_command(robot_ip)
+            return Response(content, status_code)        
+        
+        
+        try:
+            content, status_code = ResponseFormat.ok_info(id= robot_ip,\
+            hit= robots[robot_ip].hit, distance= robots[robot_ip].distance)
+            return Response(content, status_code)
+            
+        except:
+            content, status_code = ResponseFormat.err_no_data(robot_ip)
+            return Response(content, status_code)
      
 @router.get("/video")
 async def stream_video(request: Request, robot_ip: str):
@@ -198,7 +230,6 @@ async def stream_video(request: Request, robot_ip: str):
             
             if ret:
                 video_frame = buffer.tobytes()  
-                print(f"type : {type(io.BytesIO(video_frame))}")
                 return StreamingResponse(io.BytesIO(video_frame), media_type="image/jpeg")
             else:
                 content, status_code = ResponseFormat.err_convert()
@@ -269,7 +300,7 @@ def robot_initialize(_robot_ip) -> RoboEP:
         if _robot_ip == "192.168.50.39":
             sn = "3JKCK980030EKR"
         elif _robot_ip == "192.168.50.31":
-            sn = "imsi"
+            sn = "3JKCK2S00305WL"
            
         robots[_robot_ip] = RoboEP(sn)        
         # 3JKCK980030EKR
@@ -288,4 +319,6 @@ def robot_destroy(_robot_ip) -> bool:
     
     except:
         return False
+        
+        
         

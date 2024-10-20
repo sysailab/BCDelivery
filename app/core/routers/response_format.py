@@ -37,14 +37,23 @@ class ResponseFormat:
     def ok_scan(_ip_dict):
         return json.dumps(_ip_dict), 200
         
+    # @staticmethod
+    # def ok_info(id, time, imageData, distance):
+    #     return json.dumps({
+    #         "id": id,
+    #         "time": time,
+    #         "imageData": imageData,
+    #         "distance": distance           
+    #     }), 200
+        
     @staticmethod
-    def ok_info(id, time, imageData, distance):
+    def ok_info(id, hit, distance):
         return json.dumps({
             "id": id,
-            "time": time,
-            "imageData": imageData,
+            "hit": hit,
             "distance": distance           
-        }), 200
+        }), 200        
+        
         
     @staticmethod
     def ok_state(ip, state):
