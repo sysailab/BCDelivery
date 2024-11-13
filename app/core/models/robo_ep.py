@@ -5,6 +5,8 @@ import time
 from .base_model import BaseRobot
 import threading
 import weakref
+from .ai_module import AIModule
+
 
 CMD_CHASSIS_X_UP = "w"
 CMD_CHASSIS_X_DOWN = "s"
@@ -16,6 +18,8 @@ CMD_GIMBAL = "gimbal"
 class RoboEP(BaseRobot):
     def __init__(self, sn:str, ip:str = None) -> None:
         super().__init__()
+        
+        self.ai_module = AIModule()
         
         self.sn = sn
         self.ep_robot = None
@@ -29,6 +33,8 @@ class RoboEP(BaseRobot):
         
         self.is_stream = False
         self.is_running = True
+        self.is_ai = True
+            
             
         # self._finalizer = weakref.finalize(self, self._cleanup)
         
@@ -147,15 +153,23 @@ class RoboEP(BaseRobot):
     def video_stream(self):
         while self.is_running:
             if self.is_stream:
-                try:
-                    self.image = self.ep_camera.read_cv2_image(strategy="newest")      
-                        
-                except:
-                    print("Except!")
+                # try:
+                image = self.ep_camera.read_cv2_image(strategy="newest")      
+                
+                if self.is_ai:
+                    self.image = self.ai_module.tracking_image(image)
+                    
+                else:
+                    self.image = image
+                    
+                # except:
+                #     print("Except!")
                     # asyncio.run(self.initialize())
                     # self.ep_camera = self.ep_robot.camera
                     # self.start_stream()   
                     # continue
+                    
+    
         
     def start_stream(self):
         if not self.is_stream:
